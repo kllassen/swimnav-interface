@@ -2,29 +2,31 @@
 <html>
 <head>
     <title>SwimNav Control</title>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { 
             font-family: Arial; 
             margin: 20px; 
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            text-align: center;
         }
         .control { 
             margin: 20px 0;
             padding: 10px;
             background: #f5f5f5;
             border-radius: 8px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
         select, input { 
-            width: 100%;
+            width: 200px;
             padding: 8px;
             margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        button { 
+        button {
             padding: 12px 20px;
             margin: 5px;
             background: #007bff;
@@ -36,23 +38,16 @@
         button:disabled {
             background: #cccccc;
         }
-        #bleStatus {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            background: #f8f9fa;
-        }
         label {
             font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h2>SwimNav Control</h2>
-    <div id="bleStatus">Status: Disconnected</div>
-    
-    <button id="connectBtn" onclick="connectBLE()">Connect to Device</button>
-    
+    <h1>SwimNav Control</h1>
+    <button id="connectBtn" onclick="connect()">Connect to Device</button>
+    <div id="bleStatus" class="control">Status: Disconnected</div>
+
     <div class="control">
         <label>Error Cone (degrees):</label>
         <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
@@ -74,7 +69,7 @@
             <option value="20">20°</option>
         </select>
     </div>
-    
+
     <div class="control">
         <label>Waypoint Zone (meters):</label>
         <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
@@ -90,7 +85,7 @@
             <option value="50">50m</option>
         </select>
     </div>
-    
+
     <div class="control">
         <label>Hysteresis Cone (degrees):</label>
         <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
@@ -105,6 +100,7 @@
             <option value="10">10°</option>
         </select>
     </div>
+
     <div class="control">
         <label>Signal Triggers:</label>
         <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
@@ -115,26 +111,26 @@
             <option value="5">5</option>
         </select>
     </div>
-    
+
     <div class="control">
-        <label>Waypoint Latitude:</label>
+        <label>Waypoint Lat:</label>
         <input type="number" id="wpLat" step="0.000001" disabled>
     </div>
-    
+
     <div class="control">
-        <label>Waypoint Longitude:</label>
+        <label>Waypoint Long:</label>
         <input type="number" id="wpLong" step="0.000001" disabled>
     </div>
-    
+
     <button id="addWpBtn" onclick="addWaypoint()" disabled>Add Waypoint</button>
     <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear All</button>
 
     <script>
-	let bleDevice = null;
-        let bleServer = null;
-        let rxCharacteristic = null;
+        let bleDevice = null;
         let txCharacteristic = null;
+        let rxCharacteristic = null;
 
+        // Enable or disable all controls
         function setControlsState(enabled) {
             document.getElementById('errorCone').disabled = !enabled;
             document.getElementById('waypointZone').disabled = !enabled;
@@ -146,73 +142,83 @@
             document.getElementById('clearWpBtn').disabled = !enabled;
         }
 
-        async function connectBLE() {
+        async function connect() {
             try {
+                console.log('Requesting device...');
                 document.getElementById('bleStatus').textContent = 'Status: Connecting...';
-                console.log('Requesting BLE device...');
+
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'SwimNav' }],
+                    filters: [{name: 'SwimNav'}],
                     optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
                 });
 
-                bleServer = await bleDevice.gatt.connect();
-                const service = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
                 
-                txCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-                rxCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
-                document.getElementById('connectBtn').onclick = disconnectBLE;
+                document.getElementById('connectBtn').onclick = disconnect;
                 
                 setControlsState(true);
                 
-                await rxCharacteristic.startNotifications();
-                rxCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                // Request current values
+                console.log('Requesting device status...');
+                sendCommand(7, 0);
                 
-                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-            } catch (error) {
+            } catch(error) {
                 console.error(error);
                 document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
                 setControlsState(false);
             }
         }
 
-        function onDisconnected() {
-            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
-            document.getElementById('connectBtn').textContent = 'Connect to Device';
-            document.getElementById('connectBtn').onclick = connectBLE;
-            setControlsState(false);
-        }
-
-        async function disconnectBLE() {
+        async function disconnect() {
             if (bleDevice) {
                 await bleDevice.gatt.disconnect();
             }
-        }
-
-        function sendCommand(cmd, value) {
-            if (!txCharacteristic) return;
-            const data = new Uint8Array([cmd, value]);
-            return txCharacteristic.writeValue(data);
+            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+            document.getElementById('connectBtn').textContent = 'Connect';
+            document.getElementById('connectBtn').onclick = connect;
+            setControlsState(false);
         }
 
         function handleData(event) {
             const value = event.target.value;
-            const a = [];
-            for (let i = 0; i < value.byteLength; i++) {
-                a.push(value.getUint8(i));
+            const data = new Uint8Array(value.buffer);
+            
+            // Check if this is a status packet (first byte is 0xFF)
+            if (data[0] === 0xFF && data.length === 5) {
+                console.log('Received status packet:', data);
+                // Update UI with received values
+                document.getElementById('errorCone').value = data[1].toString();
+                document.getElementById('waypointZone').value = data[2].toString();
+                document.getElementById('hystCone').value = data[3].toString();
+                document.getElementById('triggers').value = data[4].toString();
             }
-            console.log('Received:', a);
+        }
+
+        function sendCommand(cmd, value) {
+            if (!rxCharacteristic) {
+                console.log('Not connected');
+                return;
+            }
+            const data = new Uint8Array([cmd, value]);
+            return rxCharacteristic.writeValue(data);
         }
 
         function sendSetting(type, value) {
             let cmd;
             switch(type) {
-                case 'errorCone': cmd = 0x01; break;
-                case 'waypointZone': cmd = 0x02; break;
-                case 'hystCone': cmd = 0x03; break;
-                case 'triggers': cmd = 0x04; break;
+                case 'errorCone': cmd = 1; break;
+                case 'waypointZone': cmd = 2; break;
+                case 'hystCone': cmd = 3; break;
+                case 'triggers': cmd = 4; break;
                 default: return;
             }
             sendCommand(cmd, parseInt(value));
@@ -227,7 +233,8 @@
                 return;
             }
             
-            const cmd = 0x05;  // Add waypoint command
+            // Convert lat/lon to bytes and send
+            const cmd = 5;  // Add waypoint command
             const latBytes = new Float32Array([lat]);
             const lonBytes = new Float32Array([lon]);
             const data = new Uint8Array(9);  // 1 byte command + 4 bytes lat + 4 bytes lon
@@ -235,11 +242,11 @@
             data.set(new Uint8Array(latBytes.buffer), 1);
             data.set(new Uint8Array(lonBytes.buffer), 5);
             
-            txCharacteristic.writeValue(data);
+            rxCharacteristic.writeValue(data);
         }
 
         function clearWaypoints() {
-            sendCommand(0x06, 0);  // Clear waypoints command
+            sendCommand(6, 0);  // Clear waypoints command
         }
     </script>
 </body>
