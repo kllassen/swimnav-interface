@@ -242,10 +242,16 @@
                 return;
             }
         
-            // Convert to string format that's easier to parse on Arduino side
-            const coordString = `W,${lat.toFixed(6)},${lon.toFixed(6)}\n`;
-            console.log("Sending coordinates:", coordString);
-            rxCharacteristic.writeValue(new TextEncoder().encode(coordString));
+            // Create the binary packet
+            const buffer = new ArrayBuffer(9);  // 1 byte command + 8 bytes for coordinates
+            const view = new DataView(buffer);
+            view.setUint8(0, 5);  // Waypoint command
+            view.setFloat32(1, lat, true);  // true for little-endian
+            view.setFloat32(5, lon, true);
+            
+            // Send the complete packet
+            rxCharacteristic.writeValue(buffer);
+            console.log(`Sending waypoint: ${lat}, ${lon}`);
         }
 
         function clearWaypoints() {
