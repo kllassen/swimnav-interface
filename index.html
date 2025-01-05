@@ -242,17 +242,23 @@
                 return;
             }
     
-            // Convert lat/lon to bytes and send
-            const cmd = 5;  // Add waypoint command
-            const latBytes = new Float32Array([lat]);
-            const lonBytes = new Float32Array([lon]);
-            const data = new Uint8Array(9);  // 1 byte command + 4 bytes lat + 4 bytes lon
-            data[0] = cmd;
-            data.set(new Uint8Array(latBytes.buffer), 1);
-            data.set(new Uint8Array(lonBytes.buffer), 5);
+            // Log the values being sent
+            console.log("Sending coordinates:", lat, lon);
             
-            rxCharacteristic.writeValue(data);
-        }
+            // Create a single packet
+            const buffer = new ArrayBuffer(9);
+            const view = new DataView(buffer);
+            
+            // Write command
+            view.setUint8(0, 5);  // command 5
+            
+            // Write latitude and longitude
+            view.setFloat32(1, lat, true);  // true for little-endian
+            view.setFloat32(5, lon, true);
+            
+            // Send as one packet
+            rxCharacteristic.writeValue(buffer);
+            }
 
         function clearWaypoints() {
             sendCommand(6, 0);  // Clear waypoints command
