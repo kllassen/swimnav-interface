@@ -227,38 +227,26 @@
         function addWaypoint() {
             const coordsStr = document.getElementById('wpCoords').value.trim();
             const coords = coordsStr.split(',').map(s => parseFloat(s.trim()));
-    
+            
             if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
                 alert('Please enter valid coordinates in format: latitude, longitude');
                 return;
             }
-    
+            
             const lat = coords[0];
             const lon = coords[1];
-    
+            
             // Validate ranges
             if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
                 alert('Invalid coordinate ranges. Latitude must be between -90 and 90, Longitude between -180 and 180');
                 return;
             }
-    
-            // Log the values being sent
-            console.log("Sending coordinates:", lat, lon);
-            
-            // Create a single packet
-            const buffer = new ArrayBuffer(9);
-            const view = new DataView(buffer);
-            
-            // Write command
-            view.setUint8(0, 5);  // command 5
-            
-            // Write latitude and longitude
-            view.setFloat32(1, lat, true);  // true for little-endian
-            view.setFloat32(5, lon, true);
-            
-            // Send as one packet
-            rxCharacteristic.writeValue(buffer);
-            }
+        
+            // Convert to string format that's easier to parse on Arduino side
+            const coordString = `W,${lat.toFixed(6)},${lon.toFixed(6)}\n`;
+            console.log("Sending coordinates:", coordString);
+            rxCharacteristic.writeValue(new TextEncoder().encode(coordString));
+        }
 
         function clearWaypoints() {
             sendCommand(6, 0);  // Clear waypoints command
