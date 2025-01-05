@@ -1,246 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control</title>
+    <title>Bluefruit Test</title>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { 
             font-family: Arial; 
             margin: 20px; 
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            text-align: center;
         }
-        .control { 
-            margin: 20px 0;
+        #terminal {
+            width: 80%;
+            height: 200px;
+            margin: 20px auto;
             padding: 10px;
-            background: #f5f5f5;
-            border-radius: 8px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
         }
-        select, input { 
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button { 
-            padding: 12px 20px;
+        button {
+            padding: 10px 20px;
             margin: 5px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:disabled {
-            background: #cccccc;
-        }
-        #bleStatus {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            background: #f8f9fa;
-        }
-        label {
-            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h2>SwimNav Control</h2>
-    <div id="bleStatus">Status: Disconnected</div>
-    
-    <button id="connectBtn" onclick="connectBLE()">Connect to Device</button>
-    
-    <div class="control">
-        <label>Error Cone (degrees):</label>
-        <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
-            <option value="5">5°</option>
-            <option value="6">6°</option>
-            <option value="7">7°</option>
-            <option value="8">8°</option>
-            <option value="9">9°</option>
-            <option value="10" selected>10°</option>
-            <option value="11">11°</option>
-            <option value="12">12°</option>
-            <option value="13">13°</option>
-            <option value="14">14°</option>
-            <option value="15">15°</option>
-            <option value="16">16°</option>
-            <option value="17">17°</option>
-            <option value="18">18°</option>
-            <option value="19">19°</option>
-            <option value="20">20°</option>
-        </select>
-    </div>
-    
-    <div class="control">
-        <label>Waypoint Zone (meters):</label>
-        <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
-            <option value="5">5m</option>
-            <option value="10">10m</option>
-            <option value="15" selected>15m</option>
-            <option value="20">20m</option>
-            <option value="25">25m</option>
-            <option value="30">30m</option>
-            <option value="35">35m</option>
-            <option value="40">40m</option>
-            <option value="45">45m</option>
-            <option value="50">50m</option>
-        </select>
-    </div>
-    
-    <div class="control">
-        <label>Hysteresis Cone (degrees):</label>
-        <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
-            <option value="2">2°</option>
-            <option value="3" selected>3°</option>
-            <option value="4">4°</option>
-            <option value="5">5°</option>
-            <option value="6">6°</option>
-            <option value="7">7°</option>
-            <option value="8">8°</option>
-            <option value="9">9°</option>
-            <option value="10">10°</option>
-        </select>
-    </div>
-    <div class="control">
-        <label>Signal Triggers:</label>
-        <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
-            <option value="1">1</option>
-            <option value="2" selected>2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-        </select>
-    </div>
-    
-    <div class="control">
-        <label>Waypoint Latitude:</label>
-        <input type="number" id="wpLat" step="0.000001" disabled>
-    </div>
-    
-    <div class="control">
-        <label>Waypoint Longitude:</label>
-        <input type="number" id="wpLong" step="0.000001" disabled>
-    </div>
-    
-    <button id="addWpBtn" onclick="addWaypoint()" disabled>Add Waypoint</button>
-    <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear All</button>
+    <h1>Bluefruit BLE Test</h1>
+    <button id="connectBtn" onclick="connect()">Connect</button>
+    <div id="terminal"></div>
+    <input type="text" id="input" placeholder="Type message">
+    <button onclick="send()">Send</button>
 
     <script>
-    let bleDevice = null;
-        let bleServer = null;
-        let rxCharacteristic = null;
-        let txCharacteristic = null;
+        let bluetoothDevice;
+        let txCharacteristic;
+        let rxCharacteristic;
+        let terminal = document.getElementById('terminal');
 
-        function setControlsState(enabled) {
-            document.getElementById('errorCone').disabled = !enabled;
-            document.getElementById('waypointZone').disabled = !enabled;
-            document.getElementById('hystCone').disabled = !enabled;
-            document.getElementById('triggers').disabled = !enabled;
-            document.getElementById('wpLat').disabled = !enabled;
-            document.getElementById('wpLong').disabled = !enabled;
-            document.getElementById('addWpBtn').disabled = !enabled;
-            document.getElementById('clearWpBtn').disabled = !enabled;
-        }
-
-        async function connectBLE() {
+        async function connect() {
             try {
-                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
-                console.log('Requesting BLE device...');
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'SwimNav' }],
-                    optionalServices: ['6e400001-b5a3-f393-e0a8-e50e24dcca9e']
+                terminal.insertAdjacentHTML('beforeend', 'Requesting device...\n');
+                
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{name: 'Bluefruit52'}],
+                    optionalServices: [0x6e400001-b5a3-f393-e0a8-e50e24dcca9e]
                 });
 
-                bleServer = await bleDevice.gatt.connect();
-                const service = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a8-e50e24dcca9e');
+                terminal.insertAdjacentHTML('beforeend', 'Connecting...\n');
+                const server = await bluetoothDevice.gatt.connect();
+
+                terminal.insertAdjacentHTML('beforeend', 'Getting Service...\n');
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a8-e50e24dcca9e');
+
+                terminal.insertAdjacentHTML('beforeend', 'Getting Characteristics...\n');
+                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a8-e50e24dcca9e');
+                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a8-e50e24dcca9e');
+
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
                 
-                txCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a8-e50e24dcca9e');
-                rxCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a8-e50e24dcca9e');
-                
-                document.getElementById('bleStatus').textContent = 'Status: Connected';
-                document.getElementById('connectBtn').textContent = 'Disconnect';
-                document.getElementById('connectBtn').onclick = disconnectBLE;
-                
-                setControlsState(true);
-                
-                await rxCharacteristic.startNotifications();
-                rxCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-                
-                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-            } catch (error) {
-                console.error(error);
-                document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
-                setControlsState(false);
+                terminal.insertAdjacentHTML('beforeend', 'Connected!\n');
+            } catch(error) {
+                terminal.insertAdjacentHTML('beforeend', 'Error: ' + error + '\n');
             }
-        }
-
-        function onDisconnected() {
-            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
-            document.getElementById('connectBtn').textContent = 'Connect to Device';
-            document.getElementById('connectBtn').onclick = connectBLE;
-            setControlsState(false);
-        }
-
-        async function disconnectBLE() {
-            if (bleDevice) {
-                await bleDevice.gatt.disconnect();
-            }
-        }
-
-        function sendCommand(cmd, value) {
-            if (!txCharacteristic) return;
-            const data = new Uint8Array([cmd, value]);
-            return txCharacteristic.writeValue(data);
         }
 
         function handleData(event) {
-            const value = event.target.value;
-            const a = [];
-            for (let i = 0; i < value.byteLength; i++) {
-                a.push(value.getUint8(i));
-            }
-            console.log('Received:', a);
+            let value = event.target.value;
+            let str = new TextDecoder().decode(value);
+            terminal.insertAdjacentHTML('beforeend', 'Received: ' + str + '\n');
+            terminal.scrollTop = terminal.scrollHeight;
         }
 
-        function sendSetting(type, value) {
-            let cmd;
-            switch(type) {
-                case 'errorCone': cmd = 0x01; break;
-                case 'waypointZone': cmd = 0x02; break;
-                case 'hystCone': cmd = 0x03; break;
-                case 'triggers': cmd = 0x04; break;
-                default: return;
-            }
-            sendCommand(cmd, parseInt(value));
-        }
-
-        function addWaypoint() {
-            const lat = parseFloat(document.getElementById('wpLat').value);
-            const lon = parseFloat(document.getElementById('wpLong').value);
-            
-            if (isNaN(lat) || isNaN(lon)) {
-                alert('Please enter valid coordinates');
+        function send() {
+            if (!rxCharacteristic) {
+                terminal.insertAdjacentHTML('beforeend', 'Not connected\n');
                 return;
             }
             
-            const cmd = 0x05;  // Add waypoint command
-            const latBytes = new Float32Array([lat]);
-            const lonBytes = new Float32Array([lon]);
-            const data = new Uint8Array(9);  // 1 byte command + 4 bytes lat + 4 bytes lon
-            data[0] = cmd;
-            data.set(new Uint8Array(latBytes.buffer), 1);
-            data.set(new Uint8Array(lonBytes.buffer), 5);
-            
-            txCharacteristic.writeValue(data);
-        }
-
-        function clearWaypoints() {
-            sendCommand(0x06, 0);  // Clear waypoints command
+            let input = document.getElementById('input');
+            let data = new TextEncoder().encode(input.value);
+            rxCharacteristic.writeValue(data);
+            terminal.insertAdjacentHTML('beforeend', 'Sent: ' + input.value + '\n');
+            input.value = '';
+            terminal.scrollTop = terminal.scrollHeight;
         }
     </script>
 </body>
-</html>  
+</html>
