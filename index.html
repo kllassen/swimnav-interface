@@ -43,7 +43,7 @@
                 
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
                     filters: [{name: 'Bluefruit52'}],
-                    optionalServices: [0x6e400001-b5a3-f393-e0a8-e50e24dcca9e]
+                    optionalServices: ['0x6e400001-b5a3-f393-e0a8-e50e24dcca9e']
                 });
 
                 terminal.insertAdjacentHTML('beforeend', 'Connecting...\n');
