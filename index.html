@@ -227,12 +227,12 @@
         function addWaypoint() {
             const coordsStr = document.getElementById('wpCoords').value.trim();
             const coords = coordsStr.split(',').map(s => parseFloat(s.trim()));
-    
+            
             if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
                 alert('Please enter valid coordinates in format: latitude, longitude');
                 return;
             }
-    
+            
             const lat = coords[0];
             const lon = coords[1];
             
@@ -242,22 +242,28 @@
                 return;
             }
         
-            // Create binary packet
             console.log("Creating binary packet for coordinates:", lat, lon);
             const buffer = new ArrayBuffer(9);  // 1 command byte + 8 bytes data
             const view = new DataView(buffer);
-            
+        
             // Write command byte
             view.setUint8(0, 5);
-            
-            // Write coordinates
+        
+            // Write coordinates with detailed logging
             view.setFloat32(1, lat, true);  // true = little endian
             view.setFloat32(5, lon, true);
-            
+        
+            // Read back values to verify
+            const verifyLat = view.getFloat32(1, true);
+            const verifyLon = view.getFloat32(5, true);
+            console.log("Verifying values:");
+            console.log("Original lat:", lat, "Encoded/Decoded lat:", verifyLat);
+            console.log("Original lon:", lon, "Encoded/Decoded lon:", verifyLon);
+        
             // Log the actual bytes being sent
             const bytes = new Uint8Array(buffer);
             console.log("Sending bytes:", Array.from(bytes).map(b => b.toString(16)));
-            
+        
             // Send packet
             rxCharacteristic.writeValue(buffer);
         }
