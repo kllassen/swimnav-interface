@@ -78,8 +78,20 @@
         <label>Error Cone (degrees):</label>
         <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
             <option value="5">5°</option>
+            <option value="6">6°</option>
+            <option value="7">7°</option>
+            <option value="8">8°</option>
+            <option value="9">9°</option>
             <option value="10" selected>10°</option>
+            <option value="11">11°</option>
+            <option value="12">12°</option>
+            <option value="13">13°</option>
+            <option value="14">14°</option>
             <option value="15">15°</option>
+            <option value="16">16°</option>
+            <option value="17">17°</option>
+            <option value="18">18°</option>
+            <option value="19">19°</option>
             <option value="20">20°</option>
         </select>
     </div>
@@ -91,6 +103,12 @@
             <option value="10">10m</option>
             <option value="15" selected>15m</option>
             <option value="20">20m</option>
+            <option value="25">25m</option>
+            <option value="30">30m</option>
+            <option value="35">35m</option>
+            <option value="40">40m</option>
+            <option value="45">45m</option>
+            <option value="50">50m</option>
         </select>
     </div>
 
@@ -101,6 +119,11 @@
             <option value="3" selected>3°</option>
             <option value="4">4°</option>
             <option value="5">5°</option>
+            <option value="6">6°</option>
+            <option value="7">7°</option>
+            <option value="8">8°</option>
+            <option value="9">9°</option>
+            <option value="10">10°</option>
         </select>
     </div>
 
@@ -214,6 +237,11 @@
     </script>
 
     <script>
+        // Nordic UART Service UUIDs
+        const UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
         let bleDevice = null;
         let txCharacteristic = null;
         let rxCharacteristic = null;
@@ -237,18 +265,25 @@
                 document.getElementById('bleStatus').textContent = 'Status: Connecting...';
 
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{name: 'SwimNav'}],
-                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                    filters: [{ namePrefix: 'SwimNav' }],
+                    optionalServices: [UART_SERVICE]
                 });
 
+                console.log('Device selected:', bleDevice.name);
+
                 const server = await bleDevice.gatt.connect();
-                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                console.log('Server connected');
+
+                const service = await server.getPrimaryService(UART_SERVICE);
+                console.log('Service found');
                 
-                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+                rxCharacteristic = await service.getCharacteristic(UART_RX);
+                txCharacteristic = await service.getCharacteristic(UART_TX);
+                console.log('Characteristics obtained');
 
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                console.log('Notifications started');
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
@@ -261,7 +296,7 @@
                 sendCommand(7, 0);
                 
             } catch(error) {
-                console.error(error);
+                console.error('Connection error:', error);
                 document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
                 setControlsState(false);
             }
@@ -278,11 +313,13 @@
         }
 
         function handleData(event) {
+            console.log('Data received');
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
+            console.log('Received data:', Array.from(data));
             
             if (data[0] === 0xFF && data.length === 5) {
-                console.log('Received status packet:', data);
+                console.log('Status packet received:', data);
                 document.getElementById('errorCone').value = data[1].toString();
                 document.getElementById('waypointZone').value = data[2].toString();
                 document.getElementById('hystCone').value = data[3].toString();
@@ -296,6 +333,7 @@
                 return;
             }
             const data = new Uint8Array([cmd, value]);
+            console.log('Sending command:', Array.from(data));
             return rxCharacteristic.writeValue(data);
         }
 
