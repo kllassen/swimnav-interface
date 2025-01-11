@@ -71,21 +71,9 @@
 </head>
 <body>
     <h1>SwimNav Control</h1>
-    
-    <!-- Check if Web Bluetooth is available -->
-    <div id="bluetoothStatus"></div>
-    <script>
-        if (!navigator.bluetooth) {
-            document.getElementById('bluetoothStatus').innerHTML = 
-                '<div style="color: red; margin: 10px;">Web Bluetooth is not available. ' +
-                'Please use Chrome, Edge, or Opera and ensure Web Bluetooth is enabled.</div>';
-        }
-    </script>
-
     <button id="connectBtn" onclick="connect()">Connect to Device</button>
     <div id="bleStatus" class="control">Status: Disconnected</div>
 
-    <!-- Original Controls -->
     <div class="control">
         <label>Error Cone (degrees):</label>
         <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
@@ -277,21 +265,14 @@
                     optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
                 });
 
-                console.log('Device selected:', bleDevice.name);
-
                 const server = await bleDevice.gatt.connect();
-                console.log('Server connected');
-
                 const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-                console.log('Service found');
                 
                 rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
                 txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-                console.log('Characteristics obtained');
 
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-                console.log('Notifications started');
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
@@ -321,10 +302,8 @@
         }
 
         function handleData(event) {
-            console.log('Data received');
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
-            console.log('Received data:', Array.from(data));
             
             if (data[0] === 0xFF && data.length === 5) {
                 console.log('Status packet received:', data);
@@ -341,7 +320,6 @@
                 return;
             }
             const data = new Uint8Array([cmd, value]);
-            console.log('Sending command:', Array.from(data));
             return rxCharacteristic.writeValue(data);
         }
 
