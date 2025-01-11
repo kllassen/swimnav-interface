@@ -7,6 +7,103 @@
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script>
+        // BLE Variables
+        let bleDevice = null;
+        let txCharacteristic = null;
+        let rxCharacteristic = null;
+
+        // Original connect function exactly as provided
+        async function connect() {
+            try {
+                console.log('Requesting device...');
+                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{name: 'SwimNav'}],
+                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                });
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                
+                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                
+                document.getElementById('bleStatus').textContent = 'Status: Connected';
+                document.getElementById('connectBtn').textContent = 'Disconnect';
+                document.getElementById('connectBtn').onclick = disconnect;
+                
+                setControlsState(true);
+                
+                // Request current values
+                console.log('Requesting device status...');
+                sendCommand(7, 0);
+                
+            } catch(error) {
+                console.error(error);
+                document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
+                setControlsState(false);
+            }
+        }
+
+        async function disconnect() {
+            if (bleDevice) {
+                await bleDevice.gatt.disconnect();
+            }
+            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+            document.getElementById('connectBtn').textContent = 'Connect';
+            document.getElementById('connectBtn').onclick = connect;
+            setControlsState(false);
+        }
+
+        function handleData(event) {
+            const value = event.target.value;
+            const data = new Uint8Array(value.buffer);
+            
+            if (data[0] === 0xFF && data.length === 5) {
+                console.log('Status packet received:', data);
+                document.getElementById('errorCone').value = data[1].toString();
+                document.getElementById('waypointZone').value = data[2].toString();
+                document.getElementById('hystCone').value = data[3].toString();
+                document.getElementById('triggers').value = data[4].toString();
+            }
+        }
+
+        function sendCommand(cmd, value) {
+            if (!rxCharacteristic) {
+                console.log('Not connected');
+                return;
+            }
+            const data = new Uint8Array([cmd, value]);
+            return rxCharacteristic.writeValue(data);
+        }
+
+        function sendSetting(type, value) {
+            let cmd;
+            switch(type) {
+                case 'errorCone': cmd = 1; break;
+                case 'waypointZone': cmd = 2; break;
+                case 'hystCone': cmd = 3; break;
+                case 'triggers': cmd = 4; break;
+                default: return;
+            }
+            sendCommand(cmd, parseInt(value));
+        }
+
+        function setControlsState(enabled) {
+            document.getElementById('errorCone').disabled = !enabled;
+            document.getElementById('waypointZone').disabled = !enabled;
+            document.getElementById('hystCone').disabled = !enabled;
+            document.getElementById('triggers').disabled = !enabled;
+            window.rxCharacteristic = enabled ? rxCharacteristic : null;
+            // Force React component to update
+            ReactDOM.render(
+                <WaypointManager />,
+                document.getElementById('waypointManagerRoot')
+            );
+        }
+    </script>
     <style>
         body { 
             font-family: Arial; 
@@ -230,121 +327,13 @@
             );
         };
 
-        ReactDOM.render(
-            <WaypointManager />,
-            document.getElementById('waypointManagerRoot')
-        );
-    </script>
-
-    <script>
-        let bleDevice = null;
-        let txCharacteristic = null;
-        let rxCharacteristic = null;
-
-        // Enable or disable all controls
-        function setControlsState(enabled) {
-            document.getElementById('errorCone').disabled = !enabled;
-            document.getElementById('waypointZone').disabled = !enabled;
-            document.getElementById('hystCone').disabled = !enabled;
-            document.getElementById('triggers').disabled = !enabled;
-            window.rxCharacteristic = enabled ? rxCharacteristic : null;
-            // Force React component to update
+        // Initialize the React component
+        document.addEventListener('DOMContentLoaded', () => {
             ReactDOM.render(
                 <WaypointManager />,
                 document.getElementById('waypointManagerRoot')
             );
-        }
-
-        async function connect() {
-            try {
-                console.log('Requesting device...');
-                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
-
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{name: 'SwimNav'}],
-                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
-                });
-
-                const server = await bleDevice.gatt.connect();
-                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-                
-                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-
-                await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-                
-                document.getElementById('bleStatus').textContent = 'Status: Connected';
-                document.getElementById('connectBtn').textContent = 'Disconnect';
-                document.getElementById('connectBtn').onclick = disconnect;
-                
-                setControlsState(true);
-                
-                // Request current values
-                console.log('Requesting device status...');
-                sendCommand(7, 0);
-                
-            } catch(error) {
-                console.error('Connection error:', error);
-                document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
-                setControlsState(false);
-            }
-        }
-
-        async function disconnect() {
-            if (bleDevice) {
-                await bleDevice.gatt.disconnect();
-            }
-            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
-            document.getElementById('connectBtn').textContent = 'Connect';
-            document.getElementById('connectBtn').onclick = connect;
-            setControlsState(false);
-        }
-
-        function handleData(event) {
-            const value = event.target.value;
-            const data = new Uint8Array(value.buffer);
-            
-            if (data[0] === 0xFF && data.length === 5) {
-                console.log('Status packet received:', data);
-                document.getElementById('errorCone').value = data[1].toString();
-                document.getElementById('waypointZone').value = data[2].toString();
-                document.getElementById('hystCone').value = data[3].toString();
-                document.getElementById('triggers').value = data[4].toString();
-            }
-        }
-
-        function sendCommand(cmd, value) {
-            if (!rxCharacteristic) {
-                console.log('Not connected');
-                return;
-            }
-            const data = new Uint8Array([cmd, value]);
-            return rxCharacteristic.writeValue(data);
-        }
-
-        function sendSetting(type, value) {
-            let cmd;
-            switch(type) {
-                case 'errorCone': cmd = 1; break;
-                case 'waypointZone': cmd = 2; break;
-                case 'hystCone': cmd = 3; break;
-                case 'triggers': cmd = 4; break;
-                default: return;
-            }
-            sendCommand(cmd, parseInt(value));
-        }
-
-        // Handle disconnect event
-        if (bleDevice) {
-            bleDevice.addEventListener('gattserverdisconnected', () => {
-                console.log('Device disconnected');
-                setControlsState(false);
-                document.getElementById('bleStatus').textContent = 'Status: Disconnected';
-                document.getElementById('connectBtn').textContent = 'Connect';
-                document.getElementById('connectBtn').onclick = connect;
-            });
-        }
+        });
     </script>
 </body>
 </html>
