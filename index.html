@@ -335,7 +335,74 @@
         async function connect() {
             try {
                 console.log('Requesting device...');
-                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
+                document.getElementById('bleStatus').textContent = 'Status: Connected';
+                document.getElementById('connectBtn').textContent = 'Disconnect';
+                document.getElementById('connectBtn').onclick = disconnect;
+                
+                window.rxCharacteristic = rxCharacteristic; // Make available to React component
+                setControlsState(true);
+                
+                // Request current values
+                console.log('Requesting device status...');
+                sendCommand(7, 0);
+                
+            } catch(error) {
+                console.log('Error:', error);
+                document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
+                setControlsState(false);
+            }
+        }
+
+        async function disconnect() {
+            if (bleDevice) {
+                await bleDevice.gatt.disconnect();
+            }
+            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+            document.getElementById('connectBtn').textContent = 'Connect';
+            document.getElementById('connectBtn').onclick = connect;
+            setControlsState(false);
+        }
+
+        function handleData(event) {
+            const value = event.target.value;
+            const data = new Uint8Array(value.buffer);
+            
+            // Check if this is a status packet (first byte is 0xFF)
+            if (data[0] === 0xFF && data.length === 5) {
+                console.log('Received status packet:', data);
+                // Update UI with received values
+                document.getElementById('errorCone').value = data[1].toString();
+                document.getElementById('waypointZone').value = data[2].toString();
+                document.getElementById('hystCone').value = data[3].toString();
+                document.getElementById('triggers').value = data[4].toString();
+            }
+        }
+
+        function sendCommand(cmd, value) {
+            if (!rxCharacteristic) {
+                console.log('Not connected');
+                return;
+            }
+            const data = new Uint8Array([cmd, value]);
+            return rxCharacteristic.writeValue(data);
+        }
+
+        function sendSetting(type, value) {
+            let cmd;
+            switch(type) {
+                case 'errorCone': cmd = 1; break;
+                case 'waypointZone': cmd = 2; break;
+                case 'hystCone': cmd = 3; break;
+                case 'triggers': cmd = 4; break;
+                default: return;
+            }
+            sendCommand(cmd, parseInt(value));
+        }
+
+        // Initialize the React component when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            mountWaypointManager();
+        });textContent = 'Status: Connecting...';
 
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{name: 'SwimNav'}],
