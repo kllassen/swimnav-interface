@@ -4,10 +4,9 @@
     <title>SwimNav Control</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <style>
         body { 
             font-family: Arial; 
@@ -30,7 +29,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        .standard-button {
+        button {
             padding: 12px 20px;
             margin: 5px;
             background: #007bff;
@@ -39,37 +38,48 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        .standard-button:disabled {
+        button:disabled {
             background: #cccccc;
         }
         label {
             font-weight: bold;
         }
+        .waypoint-manager {
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .waypoint-list {
+            margin-top: 15px;
+            background: white;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .waypoint-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .error-message {
+            color: red;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
-    <h1 class="text-2xl font-bold mb-4">SwimNav Control</h1>
-    <button id="connectBtn" class="standard-button" onclick="connect()">Connect to Device</button>
+    <h1>SwimNav Control</h1>
+    <button id="connectBtn" onclick="connect()">Connect to Device</button>
     <div id="bleStatus" class="control">Status: Disconnected</div>
 
     <div class="control">
         <label>Error Cone (degrees):</label>
         <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
             <option value="5">5°</option>
-            <option value="6">6°</option>
-            <option value="7">7°</option>
-            <option value="8">8°</option>
-            <option value="9">9°</option>
             <option value="10" selected>10°</option>
-            <option value="11">11°</option>
-            <option value="12">12°</option>
-            <option value="13">13°</option>
-            <option value="14">14°</option>
             <option value="15">15°</option>
-            <option value="16">16°</option>
-            <option value="17">17°</option>
-            <option value="18">18°</option>
-            <option value="19">19°</option>
             <option value="20">20°</option>
         </select>
     </div>
@@ -81,12 +91,6 @@
             <option value="10">10m</option>
             <option value="15" selected>15m</option>
             <option value="20">20m</option>
-            <option value="25">25m</option>
-            <option value="30">30m</option>
-            <option value="35">35m</option>
-            <option value="40">40m</option>
-            <option value="45">45m</option>
-            <option value="50">50m</option>
         </select>
     </div>
 
@@ -97,11 +101,6 @@
             <option value="3" selected>3°</option>
             <option value="4">4°</option>
             <option value="5">5°</option>
-            <option value="6">6°</option>
-            <option value="7">7°</option>
-            <option value="8">8°</option>
-            <option value="9">9°</option>
-            <option value="10">10°</option>
         </select>
     </div>
 
@@ -116,206 +115,102 @@
         </select>
     </div>
 
-    <!-- New Waypoint Management Section -->
-    <div id="waypointManager"></div>
+    <div id="waypointManagerRoot"></div>
 
     <script type="text/babel">
-        // Waypoint Manager Component
-        const WaypointManager = ({ rxCharacteristic, isConnected }) => {
+        const WaypointManager = () => {
             const [waypoints, setWaypoints] = React.useState([]);
-            const [coords, setCoords] = React.useState('');
-            const [editIndex, setEditIndex] = React.useState(-1);
+            const [currentCoords, setCurrentCoords] = React.useState('');
             const [error, setError] = React.useState('');
-            const [sendingStatus, setSendingStatus] = React.useState('');
 
-            const validateCoords = (coordStr) => {
+            const validateCoordinates = (coordStr) => {
                 const coords = coordStr.split(',').map(s => parseFloat(s.trim()));
-                
                 if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
-                    throw new Error('Please enter valid coordinates in format: latitude, longitude');
+                    throw new Error('Invalid coordinate format');
                 }
-                
                 const [lat, lon] = coords;
                 if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                    throw new Error('Invalid coordinate ranges. Latitude must be between -90 and 90, Longitude between -180 and 180');
+                    throw new Error('Coordinates out of range');
                 }
-                
                 return { lat, lon };
             };
 
             const addWaypoint = () => {
                 try {
-                    const { lat, lon } = validateCoords(coords);
-                    
-                    if (editIndex >= 0) {
-                        setWaypoints(prev => prev.map((wp, i) => 
-                            i === editIndex ? { lat, lon } : wp
-                        ));
-                        setEditIndex(-1);
-                    } else {
-                        setWaypoints(prev => [...prev, { lat, lon }]);
-                    }
-                    
-                    setCoords('');
+                    const coords = validateCoordinates(currentCoords);
+                    setWaypoints([...waypoints, coords]);
+                    setCurrentCoords('');
                     setError('');
                 } catch (err) {
                     setError(err.message);
                 }
             };
 
-            const editWaypoint = (index) => {
-                const wp = waypoints[index];
-                setCoords(`${wp.lat}, ${wp.lon}`);
-                setEditIndex(index);
-            };
-
             const removeWaypoint = (index) => {
-                setWaypoints(prev => prev.filter((_, i) => i !== index));
-                if (editIndex === index) {
-                    setEditIndex(-1);
-                    setCoords('');
-                }
+                setWaypoints(waypoints.filter((_, i) => i !== index));
             };
 
-            const sendWaypoint = async (lat, lon) => {
-                if (!rxCharacteristic) return;
-                
-                const buffer = new ArrayBuffer(9);
-                const view = new DataView(buffer);
-                
-                view.setUint8(0, 5); // Command byte
-                view.setFloat32(1, lat, true);
-                view.setFloat32(5, lon, true);
-                
-                await rxCharacteristic.writeValue(buffer);
-                return new Promise(resolve => setTimeout(resolve, 100)); // Delay between sends
-            };
-
-            const sendAllWaypoints = async () => {
+            const sendWaypoints = async () => {
                 try {
-                    setError('');
-                    for (let i = 0; i < waypoints.length; i++) {
-                        setSendingStatus(`Sending waypoint ${i + 1} of ${waypoints.length}...`);
-                        await sendWaypoint(waypoints[i].lat, waypoints[i].lon);
+                    for (const wp of waypoints) {
+                        const buffer = new ArrayBuffer(9);
+                        const view = new DataView(buffer);
+                        view.setUint8(0, 5); // Command byte
+                        view.setFloat32(1, wp.lat, true);
+                        view.setFloat32(5, wp.lon, true);
+                        await window.rxCharacteristic.writeValue(buffer);
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
-                    setSendingStatus('All waypoints sent successfully!');
-                    setTimeout(() => setSendingStatus(''), 2000);
-                    setWaypoints([]); // Clear after successful send
+                    setWaypoints([]);
+                    setError('');
                 } catch (err) {
-                    setError('Error sending waypoints: ' + err.message);
-                    setSendingStatus('');
+                    setError('Failed to send waypoints: ' + err.message);
                 }
             };
 
             return (
-                <div className="max-w-2xl mx-auto mt-8 p-4 bg-gray-50 rounded-lg">
-                    <h2 className="text-xl font-bold mb-4">Waypoint Management</h2>
-                    
-                    {error && (
-                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                            {error}
-                        </div>
-                    )}
-                    
-                    {sendingStatus && (
-                        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
-                            {sendingStatus}
-                        </div>
-                    )}
-                    
-                    <div className="flex gap-2 mb-4">
+                <div className="waypoint-manager">
+                    <h2>Waypoint Management</h2>
+                    <div>
                         <input
                             type="text"
-                            value={coords}
-                            onChange={(e) => setCoords(e.target.value)}
+                            value={currentCoords}
+                            onChange={(e) => setCurrentCoords(e.target.value)}
                             placeholder="42.540340, -83.214491"
-                            className="flex-1 px-3 py-2 border rounded"
-                            disabled={!isConnected}
+                            disabled={!window.rxCharacteristic}
                         />
-                        <button
+                        <button 
                             onClick={addWaypoint}
-                            disabled={!isConnected}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                            disabled={!window.rxCharacteristic}
                         >
-                            {editIndex >= 0 ? 'Update' : 'Add'}
+                            Add Waypoint
                         </button>
                     </div>
-
+                    {error && <div className="error-message">{error}</div>}
+                    <div className="waypoint-list">
+                        {waypoints.map((wp, index) => (
+                            <div key={index} className="waypoint-item">
+                                <span>
+                                    {wp.lat.toFixed(6)}, {wp.lon.toFixed(6)}
+                                </span>
+                                <button onClick={() => removeWaypoint(index)}>Remove</button>
+                            </div>
+                        ))}
+                    </div>
                     {waypoints.length > 0 && (
-                        <div className="border rounded-lg overflow-hidden mb-4">
-                            <table className="w-full">
-                                <thead className="bg-gray-100">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left">#</th>
-                                        <th className="px-4 py-2 text-left">Latitude</th>
-                                        <th className="px-4 py-2 text-left">Longitude</th>
-                                        <th className="px-4 py-2 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {waypoints.map((wp, index) => (
-                                        <tr key={index} className="border-t">
-                                            <td className="px-4 py-2">{index + 1}</td>
-                                            <td className="px-4 py-2">{wp.lat.toFixed(6)}</td>
-                                            <td className="px-4 py-2">{wp.lon.toFixed(6)}</td>
-                                            <td className="px-4 py-2 text-right">
-                                                <button
-                                                    onClick={() => editWaypoint(index)}
-                                                    className="text-blue-500 hover:text-blue-700 mr-2"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => removeWaypoint(index)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {waypoints.length > 0 && (
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setWaypoints([])}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                            >
-                                Clear All
-                            </button>
-                            <button
-                                onClick={sendAllWaypoints}
-                                disabled={!isConnected}
-                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
-                            >
-                                Send All Waypoints
-                            </button>
+                        <div>
+                            <button onClick={sendWaypoints}>Send All Waypoints</button>
+                            <button onClick={() => setWaypoints([])}>Clear All</button>
                         </div>
                     )}
                 </div>
             );
         };
 
-        // Mount the React component
-        const mountWaypointManager = () => {
-            const container = document.getElementById('waypointManager');
-            ReactDOM.render(
-                <WaypointManager 
-                    rxCharacteristic={window.rxCharacteristic}
-                    isConnected={window.bleDevice?.gatt.connected}
-                />,
-                container
-            );
-        };
-
-        // Update the component when BLE connection changes
-        const updateWaypointManager = () => {
-            mountWaypointManager();
-        };
+        ReactDOM.render(
+            <WaypointManager />,
+            document.getElementById('waypointManagerRoot')
+        );
     </script>
 
     <script>
@@ -323,23 +218,42 @@
         let txCharacteristic = null;
         let rxCharacteristic = null;
 
-        // Enable or disable all controls
         function setControlsState(enabled) {
             document.getElementById('errorCone').disabled = !enabled;
             document.getElementById('waypointZone').disabled = !enabled;
             document.getElementById('hystCone').disabled = !enabled;
             document.getElementById('triggers').disabled = !enabled;
-            updateWaypointManager(); // Update React component
+            window.rxCharacteristic = enabled ? rxCharacteristic : null;
+            // Force React component to update
+            ReactDOM.render(
+                <WaypointManager />,
+                document.getElementById('waypointManagerRoot')
+            );
         }
 
         async function connect() {
             try {
                 console.log('Requesting device...');
+                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
+
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{name: 'SwimNav'}],
+                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                });
+
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                
+                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
                 document.getElementById('connectBtn').onclick = disconnect;
                 
-                window.rxCharacteristic = rxCharacteristic; // Make available to React component
                 setControlsState(true);
                 
                 // Request current values
@@ -347,7 +261,7 @@
                 sendCommand(7, 0);
                 
             } catch(error) {
-                console.log('Error:', error);
+                console.error(error);
                 document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
                 setControlsState(false);
             }
@@ -367,10 +281,8 @@
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
             
-            // Check if this is a status packet (first byte is 0xFF)
             if (data[0] === 0xFF && data.length === 5) {
                 console.log('Received status packet:', data);
-                // Update UI with received values
                 document.getElementById('errorCone').value = data[1].toString();
                 document.getElementById('waypointZone').value = data[2].toString();
                 document.getElementById('hystCone').value = data[3].toString();
@@ -399,23 +311,16 @@
             sendCommand(cmd, parseInt(value));
         }
 
-        // Initialize the React component when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            mountWaypointManager();
-        });textContent = 'Status: Connecting...';
-
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{name: 'SwimNav'}],
-                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
-                });
-
-                const server = await bleDevice.gatt.connect();
-                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-                
-                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-
-                await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-                
-                document.getElementById('bleStatus').
+        // Handle disconnect event
+        if (bleDevice) {
+            bleDevice.addEventListener('gattserverdisconnected', () => {
+                console.log('Device disconnected');
+                setControlsState(false);
+                document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+                document.getElementById('connectBtn').textContent = 'Connect';
+                document.getElementById('connectBtn').onclick = connect;
+            });
+        }
+    </script>
+</body>
+</html>
