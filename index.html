@@ -184,18 +184,18 @@
             try {
                 console.log('Requesting device...');
                 document.getElementById('bleStatus').textContent = 'Status: Connecting...';
-
+        
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{name: 'SwimNav'}],
                     optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
                 });
-
+        
                 const server = await bleDevice.gatt.connect();
                 const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
                 
                 rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
                 txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-
+        
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
                 
@@ -205,14 +205,17 @@
                 
                 setControlsState(true);
                 
-                // Request current values
+                // Request current values first
                 console.log('Requesting device status...');
-                sendCommand(7, 0);
+                await sendCommand(7, 0);
                 
-                // Request stored waypoints
+                // Wait before requesting waypoints
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Now request stored waypoints
                 console.log('Requesting stored waypoints...');
                 document.getElementById('loading-message').style.display = 'block';
-                sendCommand(8, 0);
+                await sendCommand(8, 0);
                 
             } catch(error) {
                 console.error(error);
