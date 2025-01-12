@@ -160,6 +160,7 @@
     </div>
 
     <button id="addWpBtn" onclick="addWaypoint()" disabled>Add Waypoint</button>
+    <button id="sendWpBtn" onclick="sendWaypoint()" disabled>Send Waypoint</button>
     <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear All</button>
 
     <script>
@@ -177,6 +178,7 @@
             document.getElementById('triggers').disabled = !enabled;
             document.getElementById('wpCoords').disabled = !enabled;
             document.getElementById('addWpBtn').disabled = !enabled;
+            document.getElementById('sendWpBtn').disabled = !enabled;
             document.getElementById('clearWpBtn').disabled = !enabled;
         }
 
@@ -356,6 +358,29 @@
             updateWaypointsList();
         }
 
+        function sendWaypoint() {
+            try {
+                const coordsStr = document.getElementById('wpCoords').value.trim();
+                const { lat, lon } = validateCoordinates(coordsStr);
+        
+                const buffer = new ArrayBuffer(9);
+                const view = new DataView(buffer);
+                view.setUint8(0, 5);
+                view.setFloat32(1, lat, true);
+                view.setFloat32(5, lon, true);
+                
+                rxCharacteristic.writeValue(buffer).then(() => {
+                    document.getElementById('wpCoords').value = '';
+                    document.getElementById('error-message').textContent = '';
+                    
+                    // Request updated waypoint list
+                    setTimeout(() => sendCommand(8, 0), 100);
+                });
+            } catch(error) {
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+        
         function clearWaypoints() {
             sendCommand(6, 0);
             waypoints = [];
