@@ -463,6 +463,15 @@
         }
 
         function saveToFile() {
+            // Prompt for filename
+            let filename = prompt("Enter a name for this configuration:", "swimnav-config");
+            if (!filename) return;  // If user cancels prompt
+            
+            // Add .json extension if not present
+            if (!filename.toLowerCase().endsWith('.json')) {
+                filename += '.json';
+            }
+            
             // Gather all settings and waypoints
             const config = {
                 settings: {
@@ -479,7 +488,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'swimnav-config.json';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
