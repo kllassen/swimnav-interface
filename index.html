@@ -354,8 +354,14 @@
             updateWaypointsList();
         }
 
+        // Updated function to clear device waypoints before sending new ones
         async function sendWaypoints() {
             try {
+                // First clear existing waypoints on device
+                await sendCommand(6, 0);  // Command 6 = Clear waypoints
+                await new Promise(resolve => setTimeout(resolve, 100)); // Wait for clear
+                
+                // Then send new waypoints
                 for (const wp of waypoints) {
                     const buffer = new ArrayBuffer(9);
                     const view = new DataView(buffer);
