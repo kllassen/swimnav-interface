@@ -284,14 +284,28 @@
                 listElement.style.display = 'none';
                 return;
             }
-
+        
             listElement.style.display = 'block';
-            listElement.innerHTML = waypoints.map((wp, index) => `
-                <div class="waypoint-item">
-                    <span>${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}</span>
-                    <button onclick="removeWaypoint(${index})">Remove</button>
-                </div>
-            `).join('');
+            listElement.innerHTML = waypoints.map((wp, index) => {
+                // Determine label based on position
+                let label;
+                if (waypoints.length === 1) {
+                    label = "Start/Finish";
+                } else if (index === 0) {
+                    label = "Start";
+                } else if (index === waypoints.length - 1) {
+                    label = "Finish";
+                } else {
+                    label = `Waypoint ${index}`;
+                }
+        
+                return `
+                    <div class="waypoint-item">
+                        <span><strong>${label}:</strong> ${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}</span>
+                        <button onclick="removeWaypoint(${index})">Remove</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function sendCommand(cmd, value) {
