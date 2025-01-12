@@ -334,20 +334,16 @@
             try {
                 const coordsStr = document.getElementById('wpCoords').value.trim();
                 const { lat, lon } = validateCoordinates(coordsStr);
-
-                const buffer = new ArrayBuffer(9);
-                const view = new DataView(buffer);
-                view.setUint8(0, 5);
-                view.setFloat32(1, lat, true);
-                view.setFloat32(5, lon, true);
                 
-                rxCharacteristic.writeValue(buffer).then(() => {
-                    document.getElementById('wpCoords').value = '';
-                    document.getElementById('error-message').textContent = '';
-                    
-                    // Request updated waypoint list
-                    setTimeout(() => sendCommand(8, 0), 100);
-                });
+                // Add to waypoints array
+                waypoints.push({ lat, lon });
+                
+                // Clear input and error
+                document.getElementById('wpCoords').value = '';
+                document.getElementById('error-message').textContent = '';
+                
+                // Update display
+                updateWaypointsList();
             } catch(error) {
                 document.getElementById('error-message').textContent = error.message;
             }
@@ -358,26 +354,28 @@
             updateWaypointsList();
         }
 
-        function sendWaypoint() {
+        async function sendWaypoints() {
             try {
-                const coordsStr = document.getElementById('wpCoords').value.trim();
-                const { lat, lon } = validateCoordinates(coordsStr);
-        
-                const buffer = new ArrayBuffer(9);
-                const view = new DataView(buffer);
-                view.setUint8(0, 5);
-                view.setFloat32(1, lat, true);
-                view.setFloat32(5, lon, true);
-                
-                rxCharacteristic.writeValue(buffer).then(() => {
-                    document.getElementById('wpCoords').value = '';
-                    document.getElementById('error-message').textContent = '';
+                for (const wp of waypoints) {
+                    const buffer = new ArrayBuffer(9);
+                    const view = new DataView(buffer);
+                    view.setUint8(0, 5);
+                    view.setFloat32(1, wp.lat, true);
+                    view.setFloat32(5, wp.lon, true);
                     
-                    // Request updated waypoint list
-                    setTimeout(() => sendCommand(8, 0), 100);
-                });
+                    await rxCharacteristic.writeValue(buffer);
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Delay between sends
+                }
+                
+                // Clear list after successful send
+                waypoints = [];
+                updateWaypointsList();
+                document.getElementById('error-message').textContent = '';
+                
+                // Request updated waypoint list from device
+                setTimeout(() => sendCommand(8, 0), 100);
             } catch(error) {
-                document.getElementById('error-message').textContent = error.message;
+                document.getElementById('error-message').textContent = 'Error sending waypoints: ' + error.message;
             }
         }
         
