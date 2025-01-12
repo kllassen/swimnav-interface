@@ -41,7 +41,6 @@
         label {
             font-weight: bold;
         }
-        /* New styles for waypoint management */
         .waypoint-list {
             margin: 10px auto;
             max-width: 400px;
@@ -49,6 +48,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             padding: 10px;
+            text-align: left;
         }
         .waypoint-item {
             display: flex;
@@ -68,6 +68,11 @@
             color: red;
             margin: 5px 0;
             font-size: 0.9em;
+        }
+        .loading-message {
+            color: #666;
+            font-style: italic;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -150,13 +155,11 @@
             Format: latitude, longitude (paste directly from Google Maps)
         </div>
         <div id="error-message" class="error-message"></div>
-        <div id="waypoint-list" class="waypoint-list" style="display: none;">
-            <!-- Waypoints will be added here -->
-        </div>
+        <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
+        <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
     </div>
 
     <button id="addWpBtn" onclick="addWaypoint()" disabled>Add Waypoint</button>
-    <button id="sendAllBtn" onclick="sendAllWaypoints()" disabled style="display: none;">Send All Waypoints</button>
     <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear All</button>
 
     <script>
@@ -164,8 +167,9 @@
         let txCharacteristic = null;
         let rxCharacteristic = null;
         let waypoints = [];
+        let expectedWaypoints = 0;
+        let receivedWaypoints = 0;
 
-        // Enable or disable all controls
         function setControlsState(enabled) {
             document.getElementById('errorCone').disabled = !enabled;
             document.getElementById('waypointZone').disabled = !enabled;
@@ -174,7 +178,6 @@
             document.getElementById('wpCoords').disabled = !enabled;
             document.getElementById('addWpBtn').disabled = !enabled;
             document.getElementById('clearWpBtn').disabled = !enabled;
-            document.getElementById('sendAllBtn').disabled = !enabled;
         }
 
         async function connect() {
@@ -206,6 +209,11 @@
                 console.log('Requesting device status...');
                 sendCommand(7, 0);
                 
+                // Request stored waypoints
+                console.log('Requesting stored waypoints...');
+                document.getElementById('loading-message').style.display = 'block';
+                sendCommand(8, 0);
+                
             } catch(error) {
                 console.error(error);
                 document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
@@ -221,6 +229,8 @@
             document.getElementById('connectBtn').textContent = 'Connect';
             document.getElementById('connectBtn').onclick = connect;
             setControlsState(false);
+            waypoints = [];
+            updateWaypointsList();
         }
 
         function handleData(event) {
@@ -228,12 +238,55 @@
             const data = new Uint8Array(value.buffer);
             
             if (data[0] === 0xFF && data.length === 5) {
+                // Status packet
                 console.log('Received status packet:', data);
                 document.getElementById('errorCone').value = data[1].toString();
                 document.getElementById('waypointZone').value = data[2].toString();
                 document.getElementById('hystCone').value = data[3].toString();
                 document.getElementById('triggers').value = data[4].toString();
             }
+            else if (data[0] === 0xFF && data.length === 2) {
+                // Waypoint count packet
+                console.log('Received waypoint count:', data[1]);
+                expectedWaypoints = data[1];
+                receivedWaypoints = 0;
+                waypoints = [];
+                if (expectedWaypoints === 0) {
+                    document.getElementById('loading-message').style.display = 'none';
+                    updateWaypointsList();
+                }
+            }
+            else if (data[0] === 0xFE && data.length === 9) {
+                // Waypoint data packet
+                const view = new DataView(data.buffer);
+                const lat = view.getFloat32(1, true);
+                const lon = view.getFloat32(5, true);
+                console.log('Received waypoint:', lat, lon);
+                
+                waypoints.push({ lat, lon });
+                receivedWaypoints++;
+                
+                if (receivedWaypoints >= expectedWaypoints) {
+                    document.getElementById('loading-message').style.display = 'none';
+                    updateWaypointsList();
+                }
+            }
+        }
+
+        function updateWaypointsList() {
+            const listElement = document.getElementById('waypoint-list');
+            if (waypoints.length === 0) {
+                listElement.style.display = 'none';
+                return;
+            }
+
+            listElement.style.display = 'block';
+            listElement.innerHTML = waypoints.map((wp, index) => `
+                <div class="waypoint-item">
+                    <span>${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}</span>
+                    <button onclick="removeWaypoint(${index})">Remove</button>
+                </div>
+            `).join('');
         }
 
         function sendCommand(cmd, value) {
@@ -272,37 +325,24 @@
             return { lat, lon };
         }
 
-        function updateWaypointsList() {
-            const listElement = document.getElementById('waypoint-list');
-            if (waypoints.length === 0) {
-                listElement.style.display = 'none';
-                document.getElementById('sendAllBtn').style.display = 'none';
-                return;
-            }
-
-            listElement.style.display = 'block';
-            document.getElementById('sendAllBtn').style.display = 'inline-block';
-            
-            listElement.innerHTML = waypoints.map((wp, index) => `
-                <div class="waypoint-item">
-                    <span>${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}</span>
-                    <div class="waypoint-actions">
-                        <button onclick="removeWaypoint(${index})">Remove</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
         function addWaypoint() {
             try {
                 const coordsStr = document.getElementById('wpCoords').value.trim();
-                const coords = validateCoordinates(coordsStr);
+                const { lat, lon } = validateCoordinates(coordsStr);
+
+                const buffer = new ArrayBuffer(9);
+                const view = new DataView(buffer);
+                view.setUint8(0, 5);
+                view.setFloat32(1, lat, true);
+                view.setFloat32(5, lon, true);
                 
-                waypoints.push(coords);
-                document.getElementById('wpCoords').value = '';
-                document.getElementById('error-message').textContent = '';
-                updateWaypointsList();
-                
+                rxCharacteristic.writeValue(buffer).then(() => {
+                    document.getElementById('wpCoords').value = '';
+                    document.getElementById('error-message').textContent = '';
+                    
+                    // Request updated waypoint list
+                    setTimeout(() => sendCommand(8, 0), 100);
+                });
             } catch(error) {
                 document.getElementById('error-message').textContent = error.message;
             }
@@ -313,35 +353,10 @@
             updateWaypointsList();
         }
 
-        async function sendWaypointToDevice(lat, lon) {
-            const buffer = new ArrayBuffer(9);
-            const view = new DataView(buffer);
-            
-            view.setUint8(0, 5);
-            view.setFloat32(1, lat, true);
-            view.setFloat32(5, lon, true);
-            
-            await rxCharacteristic.writeValue(buffer);
-            return new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        async function sendAllWaypoints() {
-            try {
-                for (const wp of waypoints) {
-                    await sendWaypointToDevice(wp.lat, wp.lon);
-                }
-                waypoints = [];
-                updateWaypointsList();
-                document.getElementById('error-message').textContent = '';
-            } catch(error) {
-                document.getElementById('error-message').textContent = 'Error sending waypoints: ' + error.message;
-            }
-        }
-
         function clearWaypoints() {
+            sendCommand(6, 0);
             waypoints = [];
             updateWaypointsList();
-            sendCommand(6, 0);
         }
     </script>
 </body>
