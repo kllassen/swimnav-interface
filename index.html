@@ -76,11 +76,33 @@
             font-style: italic;
             margin: 10px 0;
         }
-        /* Add this new style for waypoint labels */
         .waypoint-item strong {
             color: #007bff;
             margin-right: 5px;
         }
+        .loading-message {
+        color: #666;
+        font-style: italic;
+        margin: 10px 0;
+        }
+    
+        .move-btn {
+            padding: 4px 8px;
+            margin: 0 2px;
+            font-size: 14px;
+            background: #6c757d;
+        }
+        .remove-btn {
+            padding: 4px 8px;
+            margin: 0 2px;
+            font-size: 14px;
+        }
+        .waypoint-actions {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+        
     </style>
 </head>
 <body>
@@ -306,10 +328,20 @@
                     label = `Waypoint ${index}`;
                 }
         
+                // Create move buttons, but hide them for first/last items when appropriate
+                const upButton = index === 0 ? '' : 
+                    `<button onclick="moveWaypoint(${index}, 'up')" class="move-btn">↑</button>`;
+                const downButton = index === waypoints.length - 1 ? '' : 
+                    `<button onclick="moveWaypoint(${index}, 'down')" class="move-btn">↓</button>`;
+        
                 return `
                     <div class="waypoint-item">
                         <span><strong>${label}:</strong> ${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}</span>
-                        <button onclick="removeWaypoint(${index})">Remove</button>
+                        <div class="waypoint-actions">
+                            ${upButton}
+                            ${downButton}
+                            <button onclick="removeWaypoint(${index})" class="remove-btn">Remove</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -411,6 +443,18 @@
             waypoints = [];
             updateWaypointsList();
         }
+
+        function moveWaypoint(index, direction) {
+            if (direction === 'up' && index > 0) {
+                // Swap with previous waypoint
+                [waypoints[index], waypoints[index - 1]] = [waypoints[index - 1], waypoints[index]];
+            } else if (direction === 'down' && index < waypoints.length - 1) {
+                // Swap with next waypoint
+                [waypoints[index], waypoints[index + 1]] = [waypoints[index + 1], waypoints[index]];
+            }
+            updateWaypointsList();
+        }
+        
     </script>
 </body>
 </html>
