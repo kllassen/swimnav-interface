@@ -193,6 +193,9 @@
     <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
     <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
     <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
+    <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
+    <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
+    <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
 
     <script>
         let bleDevice = null;
@@ -211,6 +214,8 @@
             document.getElementById('addWpBtn').disabled = !enabled;
             document.getElementById('sendWpBtn').disabled = !enabled;
             document.getElementById('clearWpBtn').disabled = !enabled;
+            document.getElementById('saveBtn').disabled = !enabled;
+            document.getElementById('loadBtn').disabled = !enabled;
         }
 
         async function connect() {
@@ -455,6 +460,70 @@
                 [waypoints[index], waypoints[index + 1]] = [waypoints[index + 1], waypoints[index]];
             }
             updateWaypointsList();
+        }
+
+        function saveToFile() {
+            // Gather all settings and waypoints
+            const config = {
+                settings: {
+                    errorCone: document.getElementById('errorCone').value,
+                    waypointZone: document.getElementById('waypointZone').value,
+                    hystCone: document.getElementById('hystCone').value,
+                    triggers: document.getElementById('triggers').value
+                },
+                waypoints: waypoints
+            };
+            
+            // Create and download file
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'swimnav-config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        async function loadFromFile(input) {
+            try {
+                const file = input.files[0];
+                if (!file) return;
+                
+                const text = await file.text();
+                const config = JSON.parse(text);
+                
+                // Load settings
+                if (config.settings) {
+                    document.getElementById('errorCone').value = config.settings.errorCone;
+                    document.getElementById('waypointZone').value = config.settings.waypointZone;
+                    document.getElementById('hystCone').value = config.settings.hystCone;
+                    document.getElementById('triggers').value = config.settings.triggers;
+                    
+                    // Send all settings to device
+                    Object.entries(config.settings).forEach(([type, value]) => {
+                        sendSetting(type, value);
+                    });
+                }
+                
+                // Load waypoints
+                if (config.waypoints) {
+                    waypoints = config.waypoints;
+                    updateWaypointsList();
+                }
+                
+                document.getElementById('error-message').textContent = 'Configuration loaded successfully';
+                setTimeout(() => {
+                    document.getElementById('error-message').textContent = '';
+                }, 2000);
+                
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Error loading configuration: ' + error.message;
+            }
+            
+            // Clear file input
+            input.value = '';
         }
         
     </script>
