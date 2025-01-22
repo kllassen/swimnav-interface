@@ -12,13 +12,12 @@
 
         function loadGoogleMapsScript() {
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&loading=async&v=beta`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDjWeOxmlkMVnZcV54-wbtunWFVluHtoN0&callback=initMap&loading=async`;
             script.async = true;
             script.defer = true;
             document.head.appendChild(script);
-        }       
+        }
 
-        // Define initMap function before loading Google Maps
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 13,
@@ -52,8 +51,10 @@
             }
             mapMarkers = [];
         }
-    </script>
 
+        // Add listener to load map when page loads
+        window.addEventListener('load', loadGoogleMapsScript);
+    </script>
     <style>
         body { 
             font-family: Arial; 
@@ -153,8 +154,7 @@
         }
     </style>
 </head>
-
-        <body>
+<body>
     <h1>SwimNav Control</h1>
     <button id="connectBtn" onclick="connect()">Connect to Device</button>
     <div id="bleStatus" class="control">Status: Disconnected</div>
@@ -393,7 +393,8 @@
             const [lat, lon] = coords;
             if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
                 throw new Error('Invalid coordinate ranges. Latitude must be between -90 and 90, Longitude between -180 and 180');
-            }
+
+        }
 
             return { lat, lon };
         }
@@ -434,13 +435,10 @@
             listElement.innerHTML = waypoints.map((wp, index) => {
                 // Create marker for each waypoint if map is initialized
                 if (map) {
-                    const marker = new google.maps.marker.AdvancedMarkerElement({
+                    const marker = new google.maps.Marker({
                         position: { lat: wp.lat, lng: wp.lon },
                         map: map,
-                        content: new google.maps.marker.PinElement({
-                            label: (index + 1).toString(),
-                            glyph: (index + 1).toString()
-                        })
+                        label: (index + 1).toString()
                     });
                     waypointMarkers.push(marker);
                 }
@@ -600,4 +598,4 @@
         }
     </script>
 </body>
-</html>
+</html>    
