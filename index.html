@@ -10,6 +10,14 @@
         let mapMarkers = [];
         let waypointMarkers = [];
 
+        function loadGoogleMapsScript() {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDjWeOxmlkMVnZcV54-wbtunWFVluHtoN0&callback=initMap&loading=async`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }       
+
         // Define initMap function before loading Google Maps
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
@@ -44,9 +52,6 @@
             }
             mapMarkers = [];
         }
-    </script>
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjWeOxmlkMVnZcV54-wbtunWFVluHtoN0&callback=initMap">
     </script>
 
     <style>
@@ -429,10 +434,13 @@
             listElement.innerHTML = waypoints.map((wp, index) => {
                 // Create marker for each waypoint if map is initialized
                 if (map) {
-                    const marker = new google.maps.Marker({
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
                         position: { lat: wp.lat, lng: wp.lon },
                         map: map,
-                        label: (index + 1).toString()
+                        content: new google.maps.marker.PinElement({
+                            label: (index + 1).toString(),
+                            glyph: (index + 1).toString()
+                        })
                     });
                     waypointMarkers.push(marker);
                 }
@@ -447,7 +455,7 @@
                 } else {
                     label = `Waypoint ${index}`;
                 }
-                
+
                 const upButton = index === 0 ? '' : 
                     `<button onclick="moveWaypoint(${index}, 'up')" class="move-btn">↑</button>`;
                 const downButton = index === waypoints.length - 1 ? '' : 
