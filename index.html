@@ -4,9 +4,51 @@
     <title>SwimNav Control</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        // Define variables for map functionality
+        let map;
+        let mapMarkers = [];
+        let waypointMarkers = [];
+
+        // Define initMap function before loading Google Maps
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 13,
+                center: { lat: 42.540340, lng: -83.214491 },
+                mapTypeId: 'hybrid',
+                mapTypeControl: true,
+                mapTypeControlOptions: {
+                    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+                    position: google.maps.ControlPosition.TOP_RIGHT
+                }
+            });
+
+            map.addListener('click', function(event) {
+                const lat = event.latLng.lat();
+                const lng = event.latLng.lng();
+                document.getElementById('wpCoords').value = `${lat}, ${lng}`;
+                
+                removeMapMarkers();
+                const marker = new google.maps.Marker({
+                    position: event.latLng,
+                    map: map,
+                    animation: google.maps.Animation.DROP
+                });
+                mapMarkers.push(marker);
+            });
+        }
+
+        function removeMapMarkers() {
+            for (let marker of mapMarkers) {
+                marker.setMap(null);
+            }
+            mapMarkers = [];
+        }
+    </script>
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjWeOxmlkMVnZcV54-wbtunWFVluHtoN0&callback=initMap">
     </script>
+
     <style>
         body { 
             font-family: Arial; 
@@ -106,53 +148,102 @@
         }
     </style>
 </head>
-<body>
-    <!-- Your existing HTML body content remains exactly the same until the script section -->
-    [Previous HTML content remains exactly the same]
+
+        <body>
+    <h1>SwimNav Control</h1>
+    <button id="connectBtn" onclick="connect()">Connect to Device</button>
+    <div id="bleStatus" class="control">Status: Disconnected</div>
+
+    <div class="control">
+        <label>Error Cone (deg):</label>
+        <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
+            <option value="5">5°</option>
+            <option value="6">6°</option>
+            <option value="7">7°</option>
+            <option value="8">8°</option>
+            <option value="9">9°</option>
+            <option value="10" selected>10°</option>
+            <option value="11">11°</option>
+            <option value="12">12°</option>
+            <option value="13">13°</option>
+            <option value="14">14°</option>
+            <option value="15">15°</option>
+            <option value="16">16°</option>
+            <option value="17">17°</option>
+            <option value="18">18°</option>
+            <option value="19">19°</option>
+            <option value="20">20°</option>
+        </select>
+    </div>
+
+    <div class="control">
+        <label>Waypoint Zone (meters):</label>
+        <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
+            <option value="5">5m</option>
+            <option value="10">10m</option>
+            <option value="15" selected>15m</option>
+            <option value="20">20m</option>
+            <option value="25">25m</option>
+            <option value="30">30m</option>
+            <option value="35">35m</option>
+            <option value="40">40m</option>
+            <option value="45">45m</option>
+            <option value="50">50m</option>
+        </select>
+    </div>
+
+    <div class="control">
+        <label>Hysteresis Cone (deg):</label>
+        <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
+            <option value="2">2°</option>
+            <option value="3" selected>3°</option>
+            <option value="4">4°</option>
+            <option value="5">5°</option>
+            <option value="6">6°</option>
+            <option value="7">7°</option>
+            <option value="8">8°</option>
+            <option value="9">9°</option>
+            <option value="10">10°</option>
+        </select>
+    </div>
+
+    <div class="control">
+        <label>Signal Triggers:</label>
+        <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select>
+    </div>
+
+    <div id="map-container" class="control" style="padding: 0;">
+        <div id="map" style="height: 100%; width: 100%;"></div>
+    </div>
+
+    <div class="control">
+        <label>Waypoint Coordinates:</label>
+        <input type="text" 
+               id="wpCoords" 
+               placeholder="42.540340, -83.214491"
+               disabled>
+        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+            Click on map or enter coordinates in format: latitude, longitude
+        </div>
+        <div id="error-message" class="error-message"></div>
+        <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
+        <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
+    </div>
+
+    <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
+    <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
+    <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
+    <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
+    <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
+    <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
 
     <script>
-        // Global variables for map functionality
-        let map;
-        let mapMarkers = [];
-        let waypointMarkers = [];
-
-        // Initialize map (will be called by Google Maps API when loaded)
-        window.initMap = function() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 13,
-                center: { lat: 42.540340, lng: -83.214491 },
-                mapTypeId: 'hybrid',
-                mapTypeControl: true,
-                mapTypeControlOptions: {
-                    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-                    position: google.maps.ControlPosition.TOP_RIGHT
-                }
-            });
-
-            map.addListener('click', function(event) {
-                const lat = event.latLng.lat();
-                const lng = event.latLng.lng();
-                
-                document.getElementById('wpCoords').value = `${lat}, ${lng}`;
-                
-                removeMapMarkers();
-                const marker = new google.maps.Marker({
-                    position: event.latLng,
-                    map: map,
-                    animation: google.maps.Animation.DROP
-                });
-                mapMarkers.push(marker);
-            });
-        };
-
-        function removeMapMarkers() {
-            for (let marker of mapMarkers) {
-                marker.setMap(null);
-            }
-            mapMarkers = [];
-        }
-
-        // Your existing Bluetooth-related variables
         let bleDevice = null;
         let txCharacteristic = null;
         let rxCharacteristic = null;
@@ -160,13 +251,173 @@
         let expectedWaypoints = 0;
         let receivedWaypoints = 0;
 
-        [All your existing functions remain exactly the same, except for updateWaypointsList]
+        function setControlsState(enabled) {
+            document.getElementById('errorCone').disabled = !enabled;
+            document.getElementById('waypointZone').disabled = !enabled;
+            document.getElementById('hystCone').disabled = !enabled;
+            document.getElementById('triggers').disabled = !enabled;
+            document.getElementById('wpCoords').disabled = !enabled;
+            document.getElementById('addWpBtn').disabled = !enabled;
+            document.getElementById('sendWpBtn').disabled = !enabled;
+            document.getElementById('clearWpBtn').disabled = !enabled;
+            document.getElementById('saveBtn').disabled = !enabled;
+            document.getElementById('loadBtn').disabled = !enabled;
+        }
 
-        // Modified updateWaypointsList function to include map markers
+        async function connect() {
+            try {
+                console.log('Requesting device...');
+                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
+        
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{name: 'SwimNav'}],
+                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                });
+        
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                
+                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+        
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                
+                document.getElementById('bleStatus').textContent = 'Status: Connected';
+                document.getElementById('connectBtn').textContent = 'Disconnect';
+                document.getElementById('connectBtn').onclick = disconnect;
+                
+                setControlsState(true);
+                
+                console.log('Requesting device status...');
+                await sendCommand(7, 0);
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                console.log('Requesting stored waypoints...');
+                document.getElementById('loading-message').style.display = 'block';
+                await sendCommand(8, 0);
+                
+            } catch(error) {
+                console.error(error);
+                document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
+                setControlsState(false);
+            }
+        }
+
+        async function disconnect() {
+            if (bleDevice) {
+                await bleDevice.gatt.disconnect();
+            }
+            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+            document.getElementById('connectBtn').textContent = 'Connect';
+            document.getElementById('connectBtn').onclick = connect;
+            setControlsState(false);
+            waypoints = [];
+            updateWaypointsList();
+        }
+
+        function handleData(event) {
+            const value = event.target.value;
+            const data = new Uint8Array(value.buffer);
+            
+            if (data[0] === 0xFF && data.length === 5) {
+                // Status packet
+                console.log('Received status packet:', data);
+                document.getElementById('errorCone').value = data[1].toString();
+                document.getElementById('waypointZone').value = data[2].toString();
+                document.getElementById('hystCone').value = data[3].toString();
+                document.getElementById('triggers').value = data[4].toString();
+            }
+            else if (data[0] === 0xFF && data.length === 2) {
+                // Waypoint count packet
+                console.log('Received waypoint count:', data[1]);
+                expectedWaypoints = data[1];
+                receivedWaypoints = 0;
+                waypoints = [];
+                if (expectedWaypoints === 0) {
+                    document.getElementById('loading-message').style.display = 'none';
+                    updateWaypointsList();
+                }
+            }
+            else if (data[0] === 0xFE && data.length === 9) {
+                // Waypoint data packet
+                const view = new DataView(data.buffer);
+                const lat = view.getFloat32(1, true);
+                const lon = view.getFloat32(5, true);
+                console.log('Received waypoint:', lat, lon);
+                
+                waypoints.push({ lat, lon });
+                receivedWaypoints++;
+                
+                if (receivedWaypoints >= expectedWaypoints) {
+                    document.getElementById('loading-message').style.display = 'none';
+                    updateWaypointsList();
+                }
+            }
+        }
+
+        function sendCommand(cmd, value) {
+            if (!rxCharacteristic) {
+                console.log('Not connected');
+                return;
+            }
+            const data = new Uint8Array([cmd, value]);
+            return rxCharacteristic.writeValue(data);
+        }
+
+        function sendSetting(type, value) {
+            let cmd;
+            switch(type) {
+                case 'errorCone': cmd = 1; break;
+                case 'waypointZone': cmd = 2; break;
+                case 'hystCone': cmd = 3; break;
+                case 'triggers': cmd = 4; break;
+                default: return;
+            }
+            sendCommand(cmd, parseInt(value));
+        }
+
+        function validateCoordinates(coordsStr) {
+            const coords = coordsStr.split(',').map(s => parseFloat(s.trim()));
+            
+            if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
+                throw new Error('Please enter valid coordinates in format: latitude, longitude');
+            }
+            
+            const [lat, lon] = coords;
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                throw new Error('Invalid coordinate ranges. Latitude must be between -90 and 90, Longitude between -180 and 180');
+            }
+
+            return { lat, lon };
+        }
+
+        function addWaypoint() {
+            try {
+                const coordsStr = document.getElementById('wpCoords').value.trim();
+                const { lat, lon } = validateCoordinates(coordsStr);
+                
+                // Add to waypoints array
+                waypoints.push({ lat, lon });
+                
+                // Clear input and error
+                document.getElementById('wpCoords').value = '';
+                document.getElementById('error-message').textContent = '';
+                
+                // Update display
+                updateWaypointsList();
+            } catch(error) {
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+
         function updateWaypointsList() {
             // Clear existing waypoint markers
-            waypointMarkers.forEach(marker => marker.setMap(null));
-            waypointMarkers = [];
+            if (waypointMarkers) {
+                waypointMarkers.forEach(marker => marker.setMap(null));
+                waypointMarkers = [];
+            }
             
             const listElement = document.getElementById('waypoint-list');
             if (waypoints.length === 0) {
@@ -196,7 +447,7 @@
                 } else {
                     label = `Waypoint ${index}`;
                 }
-
+                
                 const upButton = index === 0 ? '' : 
                     `<button onclick="moveWaypoint(${index}, 'up')" class="move-btn">↑</button>`;
                 const downButton = index === waypoints.length - 1 ? '' : 
@@ -215,6 +466,130 @@
             }).join('');
         }
 
+        function removeWaypoint(index) {
+            waypoints.splice(index, 1);
+            updateWaypointsList();
+        }
+
+        async function sendWaypoints() {
+            try {
+                // First clear existing waypoints on device
+                await sendCommand(6, 0);  // Command 6 = Clear waypoints
+                await new Promise(resolve => setTimeout(resolve, 100)); // Wait for clear
+                
+                // Then send new waypoints
+                for (const wp of waypoints) {
+                    const buffer = new ArrayBuffer(9);
+                    const view = new DataView(buffer);
+                    view.setUint8(0, 5);
+                    view.setFloat32(1, wp.lat, true);
+                    view.setFloat32(5, wp.lon, true);
+                    
+                    await rxCharacteristic.writeValue(buffer);
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Delay between sends
+                }
+                
+                // Clear list after successful send
+                waypoints = [];
+                updateWaypointsList();
+                document.getElementById('error-message').textContent = '';
+                
+                // Request updated waypoint list from device
+                setTimeout(() => sendCommand(8, 0), 100);
+            } catch(error) {
+                document.getElementById('error-message').textContent = 'Error sending waypoints: ' + error.message;
+            }
+        }
+        
+        function clearWaypoints() {
+            sendCommand(6, 0);
+            waypoints = [];
+            updateWaypointsList();
+        }
+
+        function moveWaypoint(index, direction) {
+            if (direction === 'up' && index > 0) {
+                // Swap with previous waypoint
+                [waypoints[index], waypoints[index - 1]] = [waypoints[index - 1], waypoints[index]];
+            } else if (direction === 'down' && index < waypoints.length - 1) {
+                // Swap with next waypoint
+                [waypoints[index], waypoints[index + 1]] = [waypoints[index + 1], waypoints[index]];
+            }
+            updateWaypointsList();
+        }
+
+        function saveToFile() {
+            // Prompt for filename
+            let filename = prompt("Enter a name for this configuration:", "swimnav-config");
+            if (!filename) return;  // If user cancels prompt
+            
+            // Add .json extension if not present
+            if (!filename.toLowerCase().endsWith('.json')) {
+                filename += '.json';
+            }
+            
+            // Gather all settings and waypoints
+            const config = {
+                settings: {
+                    errorCone: document.getElementById('errorCone').value,
+                    waypointZone: document.getElementById('waypointZone').value,
+                    hystCone: document.getElementById('hystCone').value,
+                    triggers: document.getElementById('triggers').value
+                },
+                waypoints: waypoints
+            };
+            
+            // Create and download file
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        async function loadFromFile(input) {
+            try {
+                const file = input.files[0];
+                if (!file) return;
+                
+                const text = await file.text();
+                const config = JSON.parse(text);
+                
+                // Load settings
+                if (config.settings) {
+                    document.getElementById('errorCone').value = config.settings.errorCone;
+                    document.getElementById('waypointZone').value = config.settings.waypointZone;
+                    document.getElementById('hystCone').value = config.settings.hystCone;
+                    document.getElementById('triggers').value = config.settings.triggers;
+                    
+                    // Send all settings to device
+                    Object.entries(config.settings).forEach(([type, value]) => {
+                        sendSetting(type, value);
+                    });
+                }
+                
+                // Load waypoints
+                if (config.waypoints) {
+                    waypoints = config.waypoints;
+                    updateWaypointsList();
+                }
+                
+                document.getElementById('error-message').textContent = 'Configuration loaded successfully';
+                setTimeout(() => {
+                    document.getElementById('error-message').textContent = '';
+                }, 2000);
+                
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Error loading configuration: ' + error.message;
+            }
+            
+            // Clear file input
+            input.value = '';
+        }
     </script>
 </body>
 </html>
