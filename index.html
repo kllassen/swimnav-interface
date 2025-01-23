@@ -526,6 +526,15 @@
 
         async function sendWaypoints() {
             try {
+                if (waypoints.length < 3) {
+                    document.getElementById('error-message').textContent = 'Minimum 3 waypoints required';
+                    return;
+                }
+                if (waypoints.length > 99) {
+                    document.getElementById('error-message').textContent = 'Maximum 99 waypoints allowed';
+                    return;
+                }
+                
                 await sendCommand(6, 0);
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
