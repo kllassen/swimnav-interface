@@ -534,7 +534,7 @@
                     document.getElementById('error-message').textContent = 'Maximum 99 waypoints allowed';
                     return;
                 }
-                
+        
                 await sendCommand(6, 0);
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
@@ -549,10 +549,16 @@
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 
+                document.getElementById('error-message').textContent = 'Waypoints successfully sent to device';
+                document.getElementById('error-message').style.color = 'green';
+                
+                setTimeout(() => {
+                    document.getElementById('error-message').textContent = '';
+                    document.getElementById('error-message').style.color = 'red';
+                }, 2000);
+                
                 waypoints = [];
                 updateWaypointsList();
-                document.getElementById('error-message').textContent = '';
-                
                 setTimeout(() => sendCommand(8, 0), 100);
             } catch(error) {
                 document.getElementById('error-message').textContent = 'Error sending waypoints: ' + error.message;
