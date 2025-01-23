@@ -58,56 +58,87 @@
     <style>
         body { 
             font-family: Arial; 
-            margin: 20px; 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: 350px;
+            height: 100vh;
+        }
+        
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
             text-align: center;
         }
-        #map-container {
-            margin: 20px auto;
-            max-width: 800px;
-            height: 400px;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .control { 
-            margin: 20px 0;
+        
+        .control {
+            margin: 15px 0;
             padding: 10px;
-            background: #f5f5f5;
+            background: white;
             border-radius: 8px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
+            border: 1px solid #dee2e6;
         }
-        select, input { 
-            width: 200px;
+        
+        select, input {
+            width: 100%;
             padding: 8px;
             margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            box-sizing: border-box;
         }
+        
         button {
             padding: 12px 20px;
-            margin: 5px;
+            margin: 5px 0;
+            width: 100%;
             background: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
+        
         button:disabled {
             background: #cccccc;
         }
-        label {
-            font-weight: bold;
+        
+        #map-container {
+            height: 100%;
+            width: 100%;
         }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
         .waypoint-list {
-            margin: 10px auto;
-            max-width: 600px;
+            margin: 10px 0;
             background: white;
             border: 1px solid #ddd;
             border-radius: 4px;
             padding: 10px;
             text-align: left;
         }
+        
         .waypoint-item {
             display: flex;
             justify-content: space-between;
@@ -117,28 +148,34 @@
             white-space: nowrap;
             font-family: monospace;
         }
+        
         .waypoint-item:last-child {
             border-bottom: none;
         }
+        
         .waypoint-actions {
             display: flex;
             gap: 2px;
             align-items: center;
         }
+        
         .error-message {
             color: red;
             margin: 5px 0;
             font-size: 0.9em;
         }
+        
         .loading-message {
             color: #666;
             font-style: italic;
             margin: 10px 0;
         }
+        
         .waypoint-item strong {
             color: #007bff;
             margin-right: 5px;
         }
+        
         .move-btn {
             padding: 2px 6px;
             margin: 0 1px;
@@ -146,107 +183,116 @@
             background: #6c757d;
             min-width: 25px;
         }
+        
         .remove-btn {
             padding: 2px 6px;
             margin: 0 1px;
             font-size: 12px;
             min-width: 35px;
         }
+        
+        label {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>SwimNav Control</h1>
-    <button id="connectBtn" onclick="connect()">Connect to Device</button>
-    <div id="bleStatus" class="control">Status: Disconnected</div>
+    <div class="sidebar">
+        <h1>SwimNav Control</h1>
+        <button id="connectBtn" onclick="connect()">Connect to Device</button>
+        <div id="bleStatus" class="control">Status: Disconnected</div>
 
-    <div class="control">
-        <label>Error Cone (deg):</label>
-        <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
-            <option value="5">5°</option>
-            <option value="6">6°</option>
-            <option value="7">7°</option>
-            <option value="8">8°</option>
-            <option value="9">9°</option>
-            <option value="10" selected>10°</option>
-            <option value="11">11°</option>
-            <option value="12">12°</option>
-            <option value="13">13°</option>
-            <option value="14">14°</option>
-            <option value="15">15°</option>
-            <option value="16">16°</option>
-            <option value="17">17°</option>
-            <option value="18">18°</option>
-            <option value="19">19°</option>
-            <option value="20">20°</option>
-        </select>
-    </div>
-
-    <div class="control">
-        <label>Waypoint Zone (meters):</label>
-        <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
-            <option value="5">5m</option>
-            <option value="10">10m</option>
-            <option value="15" selected>15m</option>
-            <option value="20">20m</option>
-            <option value="25">25m</option>
-            <option value="30">30m</option>
-            <option value="35">35m</option>
-            <option value="40">40m</option>
-            <option value="45">45m</option>
-            <option value="50">50m</option>
-        </select>
-    </div>
-
-    <div class="control">
-        <label>Hysteresis Cone (deg):</label>
-        <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
-            <option value="2">2°</option>
-            <option value="3" selected>3°</option>
-            <option value="4">4°</option>
-            <option value="5">5°</option>
-            <option value="6">6°</option>
-            <option value="7">7°</option>
-            <option value="8">8°</option>
-            <option value="9">9°</option>
-            <option value="10">10°</option>
-        </select>
-    </div>
-
-    <div class="control">
-        <label>Signal Triggers:</label>
-        <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
-            <option value="1">1</option>
-            <option value="2" selected>2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-        </select>
-    </div>
-
-    <div id="map-container" class="control" style="padding: 0;">
-        <div id="map" style="height: 100%; width: 100%;"></div>
-    </div>
-
-    <div class="control">
-        <label>Waypoint Coordinates:</label>
-        <input type="text" 
-               id="wpCoords" 
-               placeholder="42.540340, -83.214491"
-               disabled>
-        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
-            Click on map or enter coordinates in format: latitude, longitude
+        <div class="control">
+            <label>Error Cone (deg):</label>
+            <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
+                <option value="5">5°</option>
+                <option value="6">6°</option>
+                <option value="7">7°</option>
+                <option value="8">8°</option>
+                <option value="9">9°</option>
+                <option value="10" selected>10°</option>
+                <option value="11">11°</option>
+                <option value="12">12°</option>
+                <option value="13">13°</option>
+                <option value="14">14°</option>
+                <option value="15">15°</option>
+                <option value="16">16°</option>
+                <option value="17">17°</option>
+                <option value="18">18°</option>
+                <option value="19">19°</option>
+                <option value="20">20°</option>
+            </select>
         </div>
-        <div id="error-message" class="error-message"></div>
-        <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
-        <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
+
+        <div class="control">
+            <label>Waypoint Zone (meters):</label>
+            <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
+                <option value="5">5m</option>
+                <option value="10">10m</option>
+                <option value="15" selected>15m</option>
+                <option value="20">20m</option>
+                <option value="25">25m</option>
+                <option value="30">30m</option>
+                <option value="35">35m</option>
+                <option value="40">40m</option>
+                <option value="45">45m</option>
+                <option value="50">50m</option>
+            </select>
+        </div>
+
+        <div class="control">
+            <label>Hysteresis Cone (deg):</label>
+            <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
+                <option value="2">2°</option>
+                <option value="3" selected>3°</option>
+                <option value="4">4°</option>
+                <option value="5">5°</option>
+                <option value="6">6°</option>
+                <option value="7">7°</option>
+                <option value="8">8°</option>
+                <option value="9">9°</option>
+                <option value="10">10°</option>
+            </select>
+        </div>
+
+        <div class="control">
+            <label>Signal Triggers:</label>
+            <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </div>
+
+        <div class="control">
+            <label>Waypoint Coordinates:</label>
+            <input type="text" 
+                   id="wpCoords" 
+                   placeholder="42.540340, -83.214491"
+                   disabled>
+            <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+                Click on map or enter coordinates in format: latitude, longitude
+            </div>
+            <div id="error-message" class="error-message"></div>
+            <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
+            <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
+        </div>
+
+        <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
+        <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
+        <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
+        <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
+        <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
+        <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
     </div>
 
-    <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
-    <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
-    <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
-    <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
-    <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
-    <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
+    <div class="main-content">
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
 
     <script>
         let bleDevice = null;
@@ -356,7 +402,7 @@
                 receivedWaypoints++;
                 
                 if (receivedWaypoints >= expectedWaypoints) {
-                    document.getElementById('loading-message').style.display = 'none';
+                document.getElementById('loading-message').style.display = 'none';
                     updateWaypointsList();
                 }
             }
@@ -393,8 +439,7 @@
             const [lat, lon] = coords;
             if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
                 throw new Error('Invalid coordinate ranges. Latitude must be between -90 and 90, Longitude between -180 and 180');
-
-        }
+            }
 
             return { lat, lon };
         }
@@ -404,14 +449,11 @@
                 const coordsStr = document.getElementById('wpCoords').value.trim();
                 const { lat, lon } = validateCoordinates(coordsStr);
                 
-                // Add to waypoints array
                 waypoints.push({ lat, lon });
                 
-                // Clear input and error
                 document.getElementById('wpCoords').value = '';
                 document.getElementById('error-message').textContent = '';
                 
-                // Update display
                 updateWaypointsList();
             } catch(error) {
                 document.getElementById('error-message').textContent = error.message;
@@ -419,7 +461,6 @@
         }
 
         function updateWaypointsList() {
-            // Clear existing waypoint markers
             if (waypointMarkers) {
                 waypointMarkers.forEach(marker => marker.setMap(null));
                 waypointMarkers = [];
@@ -433,7 +474,6 @@
 
             listElement.style.display = 'block';
             listElement.innerHTML = waypoints.map((wp, index) => {
-                // Create marker for each waypoint if map is initialized
                 if (map) {
                     const marker = new google.maps.Marker({
                         position: { lat: wp.lat, lng: wp.lon },
@@ -479,11 +519,9 @@
 
         async function sendWaypoints() {
             try {
-                // First clear existing waypoints on device
-                await sendCommand(6, 0);  // Command 6 = Clear waypoints
-                await new Promise(resolve => setTimeout(resolve, 100)); // Wait for clear
+                await sendCommand(6, 0);
+                await new Promise(resolve => setTimeout(resolve, 100));
                 
-                // Then send new waypoints
                 for (const wp of waypoints) {
                     const buffer = new ArrayBuffer(9);
                     const view = new DataView(buffer);
@@ -492,15 +530,13 @@
                     view.setFloat32(5, wp.lon, true);
                     
                     await rxCharacteristic.writeValue(buffer);
-                    await new Promise(resolve => setTimeout(resolve, 100)); // Delay between sends
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 
-                // Clear list after successful send
                 waypoints = [];
                 updateWaypointsList();
                 document.getElementById('error-message').textContent = '';
                 
-                // Request updated waypoint list from device
                 setTimeout(() => sendCommand(8, 0), 100);
             } catch(error) {
                 document.getElementById('error-message').textContent = 'Error sending waypoints: ' + error.message;
@@ -515,26 +551,21 @@
 
         function moveWaypoint(index, direction) {
             if (direction === 'up' && index > 0) {
-                // Swap with previous waypoint
                 [waypoints[index], waypoints[index - 1]] = [waypoints[index - 1], waypoints[index]];
             } else if (direction === 'down' && index < waypoints.length - 1) {
-                // Swap with next waypoint
                 [waypoints[index], waypoints[index + 1]] = [waypoints[index + 1], waypoints[index]];
             }
             updateWaypointsList();
         }
 
         function saveToFile() {
-            // Prompt for filename
             let filename = prompt("Enter a name for this configuration:", "swimnav-config");
-            if (!filename) return;  // If user cancels prompt
+            if (!filename) return;
             
-            // Add .json extension if not present
             if (!filename.toLowerCase().endsWith('.json')) {
                 filename += '.json';
             }
             
-            // Gather all settings and waypoints
             const config = {
                 settings: {
                     errorCone: document.getElementById('errorCone').value,
@@ -545,7 +576,6 @@
                 waypoints: waypoints
             };
             
-            // Create and download file
             const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -565,20 +595,17 @@
                 const text = await file.text();
                 const config = JSON.parse(text);
                 
-                // Load settings
                 if (config.settings) {
                     document.getElementById('errorCone').value = config.settings.errorCone;
                     document.getElementById('waypointZone').value = config.settings.waypointZone;
                     document.getElementById('hystCone').value = config.settings.hystCone;
                     document.getElementById('triggers').value = config.settings.triggers;
                     
-                    // Send all settings to device
                     Object.entries(config.settings).forEach(([type, value]) => {
                         sendSetting(type, value);
                     });
                 }
                 
-                // Load waypoints
                 if (config.waypoints) {
                     waypoints = config.waypoints;
                     updateWaypointsList();
@@ -593,9 +620,8 @@
                 document.getElementById('error-message').textContent = 'Error loading configuration: ' + error.message;
             }
             
-            // Clear file input
             input.value = '';
         }
     </script>
 </body>
-</html>    
+</html>
