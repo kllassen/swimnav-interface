@@ -526,8 +526,8 @@
 
         async function sendWaypoints() {
             try {
-                if (waypoints.length < 3) {
-                    document.getElementById('error-message').textContent = 'Minimum 3 waypoints required';
+                if (waypoints.length < 2) {
+                    document.getElementById('error-message').textContent = 'Minimum 2 waypoints required';
                     return;
                 }
                 if (waypoints.length > 99) {
