@@ -201,6 +201,15 @@
         label {
             font-weight: bold;
         }
+
+        #download-status {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
     </style>
 </head>
 <body>
@@ -379,53 +388,36 @@
             updateWaypointsList();
         }
 
+        let currentFilename = '';
+        let downloadProgress = 0;
+        
         function handleData(event) {
-           const value = event.target.value;
-           const data = new Uint8Array(value.buffer);
-           
-           // Regular packets when not downloading
-           if (!isDownloading) {
-               if (data[0] === 0xFF && data.length === 5) {
-                   document.getElementById('errorCone').value = data[1].toString();
-                   document.getElementById('waypointZone').value = data[2].toString();
-                   document.getElementById('hystCone').value = data[3].toString();
-                   document.getElementById('triggers').value = data[4].toString();
-               }
-               else if (data[0] === 0xFF && data.length === 2) {
-                   expectedWaypoints = data[1];
-                   receivedWaypoints = 0;
-                   waypoints = [];
-                   if (expectedWaypoints === 0) {
-                       document.getElementById('loading-message').style.display = 'none';
-                       updateWaypointsList();
-                   }
-               }
-               else if (data[0] === 0xFE && data.length === 9) {
-                   const view = new DataView(data.buffer);
-                   const lat = view.getFloat32(1, true);
-                   const lon = view.getFloat32(5, true);
-                   waypoints.push({ lat, lon });
-                   receivedWaypoints++;
-                   
-                   if (receivedWaypoints >= expectedWaypoints) {
-                       document.getElementById('loading-message').style.display = 'none';
-                       updateWaypointsList();
-                   }
-               }
-           }
-           
-           // Download packets
-           if (data[0] === 0xFD) {
-               isDownloading = true;
-               const textDecoder = new TextDecoder();
-               const logData = textDecoder.decode(data.slice(1));
-               downloadBuffer += logData;
-           } 
-           else if (data[0] === 0xFC) {
-               isDownloading = false;
-               saveLogData();
-           }
-        }
+            const value = event.target.value;
+            const data = new Uint8Array(value.buffer);
+            
+            if (isDownloading) {
+                if (data[0] === 0xFE) { // Filename packet
+                    const decoder = new TextDecoder();
+                    currentFilename = decoder.decode(data.slice(1));
+                    downloadProgress = 0;
+                    updateDownloadStatus(`Starting download of ${currentFilename}...`);
+                }
+                else if (data[0] === 0xFD) { // Data packet
+                    const textDecoder = new TextDecoder();
+                    const logData = textDecoder.decode(data.slice(2));
+                    downloadBuffer += logData;
+                }
+                else if (data[0] === 0xFF) { // Progress packet
+                    downloadProgress = data[1];
+                    updateDownloadStatus(`Downloading ${currentFilename}: ${downloadProgress}%`);
+                }
+                else if (data[0] === 0xFC) { // Complete packet
+                    isDownloading = false;
+                    updateDownloadStatus('Download complete!');
+                    saveLogData(currentFilename);
+                    currentFilename = '';
+                }
+            }
 
         function sendCommand(cmd, value) {
             if (!rxCharacteristic) {
@@ -594,18 +586,21 @@
            sendCommand(9, 0);
         }
         
-        function saveLogData() {
+        function saveLogData(filename) {
             const blob = new Blob([downloadBuffer], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             a.href = url;
-            a.download = `swimnav-log-${timestamp}.csv`;
+            a.download = filename || 'swimnav-log.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             downloadBuffer = '';
+            setTimeout(() => {
+                const status = document.getElementById('download-status');
+                if (status) status.remove();
+            }, 3000);
         }
 
         function moveWaypoint(index, direction) {
@@ -615,6 +610,17 @@
                 [waypoints[index], waypoints[index + 1]] = [waypoints[index + 1], waypoints[index]];
             }
             updateWaypointsList();
+        }
+
+        function updateDownloadStatus(message) {
+            const statusElem = document.getElementById('download-status');
+            if (!statusElem) {
+                const elem = document.createElement('div');
+                elem.id = 'download-status';
+                elem.className = 'control';
+                document.getElementById('downloadBtn').insertAdjacentElement('afterend', elem);
+            }
+            document.getElementById('download-status').textContent = message;
         }
 
         function saveToFile() {
