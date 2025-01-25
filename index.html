@@ -417,13 +417,15 @@
                 }
             }
             else if (data[0] === 0xFD) {
-                // Data packet from log file
+                console.log('Received FD data packet'); // Debug line added
                 const textDecoder = new TextDecoder();
                 const logData = textDecoder.decode(data.slice(1));
+                console.log('Decoded data:', logData.substring(0, 50) + '...'); // Debug line added
                 downloadBuffer += logData;
             } 
             else if (data[0] === 0xFC) {
-                // End of transmission
+                console.log('Received FC end transmission packet'); // Debug line added
+                console.log('Total buffer size:', downloadBuffer.length); // Debug line added
                 saveLogData();
             }
         }
@@ -589,7 +591,9 @@
                 console.log('Not connected');
                 return;
             }
+            console.log('Starting download...');  // Debug line added
             downloadBuffer = '';
+            console.log('Sending command 9...');  // Debug line added        
             sendCommand(9, 0);
         }
         
