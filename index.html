@@ -320,6 +320,8 @@
         let isDownloading = false;
         let expectedWaypoints = 0;
         let receivedWaypoints = 0;
+        let currentFilename = '';
+        let downloadProgress = 0;
 
         function setControlsState(enabled) {
             document.getElementById('errorCone').disabled = !enabled;
@@ -387,9 +389,6 @@
             waypoints = [];
             updateWaypointsList();
         }
-
-        let currentFilename = '';
-        let downloadProgress = 0;
         
         function handleData(event) {
             const value = event.target.value;
