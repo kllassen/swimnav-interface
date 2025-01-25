@@ -607,16 +607,19 @@
             updateWaypointsList();
         }
 
-        function downloadData() {
+        async function downloadData() {
             if (!rxCharacteristic) {
                 console.log('Not connected');
                 return;
             }
-           isDownloading = true;
-           downloadBuffer = '';
-           console.log('Starting download...');
-           console.log('Sending command 9...');  // Add this
-           sendCommand(9, 0);
+            
+            const suggestedName = new Date().toISOString().slice(0,10);
+            const filename = prompt("Enter name for download:", suggestedName);
+            if (!filename) return;
+            
+            isDownloading = true;
+            downloadBuffer = '';
+            await sendCommand(9, 0);
         }
         
         function saveLogData(filename) {
