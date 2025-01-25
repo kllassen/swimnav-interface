@@ -613,12 +613,15 @@
                 return;
             }
             
-            const suggestedName = new Date().toISOString().slice(0,10);
-            const filename = prompt("Enter name for download:", suggestedName);
-            if (!filename) return;
+            const date = new Date();
+            const suggestedName = `SwimNav_Session_${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}`;
+            const userFilename = prompt("Enter a name for this session:", suggestedName);
+            if (!userFilename) return;
             
             isDownloading = true;
             downloadBuffer = '';
+            console.log('Starting download...');
+            updateDownloadStatus('Initiating download...');
             await sendCommand(9, 0);
         }
         
