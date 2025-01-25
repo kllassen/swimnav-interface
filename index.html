@@ -290,6 +290,7 @@
         <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
         <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
         <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
+        <button id="downloadBtn" onclick="downloadData()" disabled>Download Log Data</button>
         <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
         <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
         <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
@@ -306,6 +307,7 @@
         let txCharacteristic = null;
         let rxCharacteristic = null;
         let waypoints = [];
+        let downloadBuffer = '';
         let expectedWaypoints = 0;
         let receivedWaypoints = 0;
 
@@ -320,6 +322,7 @@
             document.getElementById('clearWpBtn').disabled = !enabled;
             document.getElementById('saveBtn').disabled = !enabled;
             document.getElementById('loadBtn').disabled = !enabled;
+            document.getElementById('downloadBtn').disabled = !enabled;
         }
 
         async function connect() {
@@ -409,9 +412,19 @@
                 receivedWaypoints++;
                 
                 if (receivedWaypoints >= expectedWaypoints) {
-                document.getElementById('loading-message').style.display = 'none';
+                    document.getElementById('loading-message').style.display = 'none';
                     updateWaypointsList();
                 }
+            }
+            else if (data[0] === 0xFD) {
+                // Data packet from log file
+                const textDecoder = new TextDecoder();
+                const logData = textDecoder.decode(data.slice(1));
+                downloadBuffer += logData;
+            } 
+            else if (data[0] === 0xFC) {
+                // End of transmission
+                saveLogData();
             }
         }
 
@@ -569,6 +582,29 @@
             sendCommand(6, 0);
             waypoints = [];
             updateWaypointsList();
+        }
+
+        function downloadData() {
+            if (!rxCharacteristic) {
+                console.log('Not connected');
+                return;
+            }
+            downloadBuffer = '';
+            sendCommand(9, 0);
+        }
+        
+        function saveLogData() {
+            const blob = new Blob([downloadBuffer], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            a.href = url;
+            a.download = `swimnav-log-${timestamp}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            downloadBuffer = '';
         }
 
         function moveWaypoint(index, direction) {
