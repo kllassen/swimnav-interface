@@ -395,6 +395,38 @@
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
             
+            // Regular packets when not downloading
+            if (!isDownloading) {
+                if (data[0] === 0xFF && data.length === 5) {
+                    document.getElementById('errorCone').value = data[1].toString();
+                    document.getElementById('waypointZone').value = data[2].toString();
+                    document.getElementById('hystCone').value = data[3].toString();
+                    document.getElementById('triggers').value = data[4].toString();
+                }
+                else if (data[0] === 0xFF && data.length === 2) {
+                    expectedWaypoints = data[1];
+                    receivedWaypoints = 0;
+                    waypoints = [];
+                    if (expectedWaypoints === 0) {
+                        document.getElementById('loading-message').style.display = 'none';
+                        updateWaypointsList();
+                    }
+                }
+                else if (data[0] === 0xFE && data.length === 9) {
+                    const view = new DataView(data.buffer);
+                    const lat = view.getFloat32(1, true);
+                    const lon = view.getFloat32(5, true);
+                    waypoints.push({ lat, lon });
+                    receivedWaypoints++;
+                    
+                    if (receivedWaypoints >= expectedWaypoints) {
+                        document.getElementById('loading-message').style.display = 'none';
+                        updateWaypointsList();
+                    }
+                }
+            }
+            
+            // Download packets
             if (isDownloading) {
                 if (data[0] === 0xFE) { // Filename packet
                     const decoder = new TextDecoder();
@@ -418,6 +450,7 @@
                     currentFilename = '';
                 }
             }
+        }
 
         function sendCommand(cmd, value) {
             if (!rxCharacteristic) {
