@@ -209,6 +209,63 @@
             border-radius: 4px;
             text-align: center;
         }
+
+        .session-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .session-list {
+            margin: 15px 0;
+        }
+
+        .session-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .session-item:last-child {
+            border-bottom: none;
+        }
+
+        .session-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: auto;
+        }
+
+        .session-info {
+            flex-grow: 1;
+        }
+
+        .dialog-buttons {
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
         
     </style>
 </head>
@@ -311,6 +368,18 @@
         </div>
     </div>
 
+    <div class="overlay" id="sessionOverlay"></div>
+    <div class="session-dialog" id="sessionDialog">
+        <h2>Select Sessions to Download</h2>
+        <div class="session-list" id="sessionList">
+            <!-- Session items will be added here dynamically -->
+        </div>
+        <div class="dialog-buttons">
+            <button onclick="cancelSessionDialog()">Cancel</button>
+            <button onclick="downloadSelectedSessions()" style="margin-left: 10px;">Download</button>
+        </div>
+    </div>
+
     <script>
         let bleDevice = null;
         let txCharacteristic = null;
@@ -324,7 +393,9 @@
         let downloadProgress = 0;
         let deviceFilename = '';
         let userRequestedFilename = '';
-
+        let expectedSessions = 0;
+        let receivedSessions = 0;
+        
         // Add after global variables
         function calculateCRC16(data) {
             let crc = 0xFFFF;
@@ -459,6 +530,27 @@
                     }
                 }
             }
+
+                else if (data[0] === 0xFB) {  // Session count packet
+                    const sessionCount = data[1];
+                    availableSessions = [];
+                    expectedSessions = sessionCount;
+                    receivedSessions = 0;
+                }
+                else if (data[0] === 0xF9) {  // Session info packet
+                    const decoder = new TextDecoder();
+                    const filename = decoder.decode(data.slice(1, 33)).replace(/\0/g, '');
+                    const view = new DataView(data.buffer);
+                    const size = view.getUint32(33, true);
+                    const records = view.getUint32(37, true);
+                    
+                    availableSessions.push({ filename, size, records });
+                    receivedSessions++;
+                    
+                    if (receivedSessions >= expectedSessions) {
+                        showSessionsList(availableSessions);
+                    }
+                }
             
             // Download packets
             if (isDownloading) {
@@ -658,31 +750,41 @@
             
             isDownloading = true;
             downloadBuffer = '';
-            updateDownloadStatus('Reading session info...');
+            updateDownloadStatus('Reading available sessions...');
             
-            const date = new Date();
-            const suggestedName = `SwimNav_Session_${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}`;
-            userRequestedFilename = prompt("Enter a name for this session:", suggestedName);
+            // Request session list from device
+            await sendCommand(10, 0);
             
-            if (!userRequestedFilename) {
-                isDownloading = false;
-                return;
+            // Note: The actual session data will be handled by the handleData function
+            // which will populate the session dialog through showSessionsList()
+        }
+
+        async function startDownloadingSession(sessions) {
+            if (!sessions || sessions.length === 0) return;
+            
+            for (const session of sessions) {
+                updateDownloadStatus(`Downloading ${session}...`);
+                downloadBuffer = '';
+                
+                // Request specific session download
+                await sendCommand(9, 0);  // We'll need to modify this to specify which file
+                
+                // Wait for download to complete
+                await new Promise(resolve => {
+                    const checkComplete = setInterval(() => {
+                        if (!isDownloading) {
+                            clearInterval(checkComplete);
+                            resolve();
+                        }
+                    }, 100);
+                });
             }
             
-            if (!userRequestedFilename.toLowerCase().endsWith('.csv')) {
-                userRequestedFilename += '.csv';
-            }
-            
-            // Request download - device will send session info first
-            await sendCommand(9, 0);
-            
-            const downloadStatus = document.getElementById('download-status');
-            if (!downloadStatus) {
-                const elem = document.createElement('div');
-                elem.id = 'download-status';
-                elem.className = 'control';
-                document.getElementById('downloadBtn').insertAdjacentElement('afterend', elem);
-            }
+            updateDownloadStatus('All downloads complete!');
+            setTimeout(() => {
+                const status = document.getElementById('download-status');
+                if (status) status.remove();
+            }, 3000);
         }
         
             function saveLogData(filename) {
@@ -792,6 +894,44 @@
             }
             
             input.value = '';
+        }
+        
+        let availableSessions = [];
+        let selectedSessions = [];
+
+        function cancelSessionDialog() {
+            document.getElementById('sessionOverlay').style.display = 'none';
+            document.getElementById('sessionDialog').style.display = 'none';
+        }
+
+        function downloadSelectedSessions() {
+            const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
+                .map(checkbox => checkbox.dataset.filename);
+            
+            if (selectedSessions.length === 0) {
+                alert('Please select at least one session to download');
+                return;
+            }
+            
+            cancelSessionDialog();
+            startDownloadingSession(selectedSessions);
+        }
+
+        function showSessionsList(sessions) {
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = sessions.map(session => `
+                <div class="session-item">
+                    <input type="checkbox" data-filename="${session.filename}">
+                    <div class="session-info">
+                        <div>Filename: ${session.filename}</div>
+                        <div>Records: ${session.records}</div>
+                        <div>Size: ${(session.size / 1024).toFixed(2)} KB</div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('sessionOverlay').style.display = 'block';
+            document.getElementById('sessionDialog').style.display = 'block';
         }
     </script>
 </body>
