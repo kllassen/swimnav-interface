@@ -395,6 +395,7 @@
         let userRequestedFilename = '';
         let expectedSessions = 0;
         let receivedSessions = 0;
+        let currentSessionInfo = null;
         
         // Add after global variables
         function calculateCRC16(data) {
@@ -538,17 +539,31 @@
                     receivedSessions = 0;
                 }
 
-                else if (data[0] === 0xF9) {  // Session info packet
+                else if (data[0] === 0xF9) {  // Session info packet (filename)
                     const decoder = new TextDecoder();
                     const filename = decoder.decode(data.slice(1)).replace(/\0/g, '');
-                    console.log('Filename:', filename);
+                    console.log('Received filename:', filename);
                     
-                    // For now, just show the filename without size/records
-                    availableSessions.push({ 
-                        filename: filename,
-                        size: 0,     // placeholder
-                        records: 0   // placeholder
-                    });
+                    // Store filename temporarily
+                    currentSessionInfo = { filename: filename };
+                }
+                else if (data[0] === 0xF8) {  // File info packet (size and records)
+                    if (!currentSessionInfo) {
+                        console.error('Received file info before filename');
+                        return;
+                    }
+                    
+                    const view = new DataView(data.buffer);
+                    const size = view.getUint32(1, true);
+                    const records = view.getUint32(5, true);
+                    
+                    console.log('Received file info:', { size, records });
+                    
+                    // Complete the session info and add to list
+                    currentSessionInfo.size = size;
+                    currentSessionInfo.records = records;
+                    availableSessions.push(currentSessionInfo);
+                    currentSessionInfo = null;
                     receivedSessions++;
                     
                     if (receivedSessions >= expectedSessions) {
