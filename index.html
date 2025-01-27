@@ -396,6 +396,7 @@
         let expectedSessions = 0;
         let receivedSessions = 0;
         let currentSessionInfo = null;
+        let currentDownloadIndex = 0;
         
         // Add after global variables
         function calculateCRC16(data) {
@@ -571,38 +572,42 @@
                     }
                 }
             
-            // Download packets
-            if (isDownloading) {
-                if (data[0] === 0xFA) { // Session info packet
-                    const sessionId = data[1];
-                    const totalRecords = data[2];
-                    const isActive = data[3];
-                    const timeSinceLastLog = data[4];
-                    updateDownloadStatus(`Session ${sessionId}: ${totalRecords} records${isActive ? ' (Active)' : ''}`);
+                // Download packets
+                if (isDownloading) {
+                    if (data[0] === 0xFA) { // File start packet
+                        downloadBuffer = '';
+                        downloadProgress = 0;
+                        const sessionInfo = availableSessions[currentDownloadIndex];
+                        updateDownloadStatus(`Downloading ${sessionInfo.filename}... 0%`);
+                    }
+                    else if (data[0] === 0xFD) { // Data packet
+                        const textDecoder = new TextDecoder();
+                        const logData = textDecoder.decode(data.slice(1));
+                        downloadBuffer += logData;
+                    }
+                    else if (data[0] === 0xFF) { // Progress packet
+                        downloadProgress = data[1];
+                        const sessionInfo = availableSessions[currentDownloadIndex];
+                        updateDownloadStatus(`Downloading ${sessionInfo.filename}... ${downloadProgress}%`);
+                    }
+                    else if (data[0] === 0xFC) { // Complete packet
+                        const sessionInfo = availableSessions[currentDownloadIndex];
+                        saveLogData(sessionInfo.filename);
+                        
+                        // Move to next file if there are more
+                        currentDownloadIndex++;
+                        if (currentDownloadIndex < availableSessions.length) {
+                            startDownloadingSession(availableSessions);
+                        } else {
+                            isDownloading = false;
+                            updateDownloadStatus('All downloads complete!');
+                            setTimeout(() => {
+                                const status = document.getElementById('download-status');
+                                if (status) status.remove();
+                            }, 3000);
+                        }
+                    }
                 }
-                else if (data[0] === 0xFE) { // Filename packet from device
-                    const decoder = new TextDecoder();
-                    deviceFilename = decoder.decode(data.slice(1));
-                    downloadProgress = 0;
-                    updateDownloadStatus(`Downloading ${userRequestedFilename}...`);
-                }
-                else if (data[0] === 0xFD) { // Data packet
-                    const textDecoder = new TextDecoder();
-                    const logData = textDecoder.decode(data.slice(2));
-                    downloadBuffer += logData;
-                }
-                else if (data[0] === 0xFF) { // Progress packet
-                    downloadProgress = data[1];
-                    updateDownloadStatus(`Downloading ${userRequestedFilename}: ${downloadProgress}%`);
-                }
-                else if (data[0] === 0xFC) { // Complete packet
-                    isDownloading = false;
-                    updateDownloadStatus('Download complete!');
-                    saveLogData(userRequestedFilename);
-                    deviceFilename = '';
-                    userRequestedFilename = '';
-                }
-            }
         }
 
         function sendCommand(cmd, value) {
@@ -781,29 +786,26 @@
         async function startDownloadingSession(sessions) {
             if (!sessions || sessions.length === 0) return;
             
-            for (const session of sessions) {
-                updateDownloadStatus(`Downloading ${session}...`);
-                downloadBuffer = '';
+            try {
+                const session = sessions[currentDownloadIndex];
+                updateDownloadStatus(`Downloading ${session.filename}... (${currentDownloadIndex + 1}/${sessions.length})`);
                 
-                // Request specific session download
-                await sendCommand(9, 0);  // We'll need to modify this to specify which file
+                // Send download command with current session filename
+                const encoder = new TextEncoder();
+                const filenameBytes = encoder.encode(session.filename);
+                const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+                cmdBuffer[0] = 9;  // Command 9
+                cmdBuffer.set(filenameBytes, 1);
                 
-                // Wait for download to complete
-                await new Promise(resolve => {
-                    const checkComplete = setInterval(() => {
-                        if (!isDownloading) {
-                            clearInterval(checkComplete);
-                            resolve();
-                        }
-                    }, 100);
-                });
+                await rxCharacteristic.writeValue(cmdBuffer);
+                
+                // The handleData function will process the incoming data and save the file
+                // When complete, it will trigger the next download
+            } catch (error) {
+                console.error('Error starting download:', error);
+                updateDownloadStatus('Download failed: ' + error.message);
+                isDownloading = false;
             }
-            
-            updateDownloadStatus('All downloads complete!');
-            setTimeout(() => {
-                const status = document.getElementById('download-status');
-                if (status) status.remove();
-            }, 3000);
         }
         
             function saveLogData(filename) {
@@ -925,7 +927,10 @@
 
         function downloadSelectedSessions() {
             const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
-                .map(checkbox => checkbox.dataset.filename);
+                .map(checkbox => {
+                    const sessionInfo = availableSessions.find(s => s.filename === checkbox.dataset.filename);
+                    return sessionInfo;
+                });
             
             if (selectedSessions.length === 0) {
                 alert('Please select at least one session to download');
@@ -933,6 +938,9 @@
             }
             
             cancelSessionDialog();
+            isDownloading = true;
+            downloadBuffer = '';
+            currentDownloadIndex = 0;
             startDownloadingSession(selectedSessions);
         }
 
