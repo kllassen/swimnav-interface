@@ -783,30 +783,33 @@
             // which will populate the session dialog through showSessionsList()
         }
 
-        async function startDownloadingSession(sessions) {
-            if (!sessions || sessions.length === 0) return;
-            
-            try {
-                const session = sessions[currentDownloadIndex];
-                updateDownloadStatus(`Downloading ${session.filename}... (${currentDownloadIndex + 1}/${sessions.length})`);
+            async function startDownloadingSession(sessions) {
+                if (!sessions || sessions.length === 0) return;
                 
-                // Send download command with current session filename
-                const encoder = new TextEncoder();
-                const filenameBytes = encoder.encode(session.filename);
-                const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
-                cmdBuffer[0] = 9;  // Command 9
-                cmdBuffer.set(filenameBytes, 1);
-                
-                await rxCharacteristic.writeValue(cmdBuffer);
-                
-                // The handleData function will process the incoming data and save the file
-                // When complete, it will trigger the next download
-            } catch (error) {
-                console.error('Error starting download:', error);
-                updateDownloadStatus('Download failed: ' + error.message);
-                isDownloading = false;
+                try {
+                    const session = sessions[currentDownloadIndex];
+                    console.log('Starting download for session:', session);
+                    updateDownloadStatus(`Downloading ${session.filename}... (${currentDownloadIndex + 1}/${sessions.length})`);
+                    
+                    // Send download command with current session filename
+                    const encoder = new TextEncoder();
+                    const filenameBytes = encoder.encode(session.filename);
+                    const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+                    cmdBuffer[0] = 9;  // Command 9
+                    cmdBuffer.set(filenameBytes, 1);
+                    
+                    console.log('Sending command buffer:', Array.from(cmdBuffer));
+                    await rxCharacteristic.writeValue(cmdBuffer);
+                    console.log('Command sent successfully');
+                    
+                    // The handleData function will process the incoming data and save the file
+                    // When complete, it will trigger the next download
+                } catch (error) {
+                    console.error('Error starting download:', error);
+                    updateDownloadStatus('Download failed: ' + error.message);
+                    isDownloading = false;
+                }
             }
-        }
         
             function saveLogData(filename) {
                 // Create metadata header with both filenames
