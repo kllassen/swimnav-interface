@@ -516,7 +516,7 @@
             updateWaypointsList();
         }
         
-        function handleData(event) {
+       async function handleData(event) {
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
             
