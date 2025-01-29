@@ -585,9 +585,23 @@
                         updateDownloadStatus(`Downloading ${sessionInfo.filename}... 0%`);
                     }
                     else if (data[0] === 0xFD) { // Data packet
+                        console.log('Received data packet');
                         const textDecoder = new TextDecoder();
                         const logData = textDecoder.decode(data.slice(1));
+                        console.log('Decoded data:', logData);
                         downloadBuffer += logData;
+                        console.log('Buffer size:', downloadBuffer.length);
+                    }
+                    else if (data[0] === 0xFF) { // Progress packet
+                        console.log('Progress update:', data[1], '%');
+                        downloadProgress = data[1];
+                        const sessionInfo = availableSessions[currentDownloadIndex];
+                        updateDownloadStatus(`Downloading ${sessionInfo.filename}... ${downloadProgress}%`);
+                    }
+                    else if (data[0] === 0xFC) { // Complete packet
+                        console.log('Download complete, saving file');
+                        const sessionInfo = availableSessions[currentDownloadIndex];
+                        saveLogData(sessionInfo.filename);
                     }
                     else if (data[0] === 0xFF) { // Progress packet
                         downloadProgress = data[1];
