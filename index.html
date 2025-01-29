@@ -480,7 +480,7 @@
                 txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
         
                 await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', );
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
