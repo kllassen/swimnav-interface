@@ -574,7 +574,11 @@
             
                 // Download packets
                 if (isDownloading) {
+                    console.log('Received packet type:', data[0].toString(16));
+                    console.log('Full packet data:', Array.from(data).map(b => b.toString(16)));
+                    
                     if (data[0] === 0xFA) { // File start packet
+                        console.log('Received start packet');
                         downloadBuffer = '';
                         downloadProgress = 0;
                         const sessionInfo = availableSessions[currentDownloadIndex];
