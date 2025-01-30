@@ -597,14 +597,22 @@
                     receivedSessions = 0;
                     console.log('Expected sessions:', sessionCount);
                 }
+
                 else if (data[0] === 0xF9) {  // Session info packet (filename)
-                    const decoder = new TextDecoder();
-                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '');
-                    console.log('Received filename:', filename);
+                    console.log('Raw filename data:', Array.from(data)); // Print raw data to debug
                     
-                    // Store filename temporarily
-                    currentSessionInfo = { filename: filename };
+                    const decoder = new TextDecoder();
+                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
+                    
+                    console.log('Processed filename:', filename);
+                    
+                    if (filename.length > 0) {
+                        currentSessionInfo = { filename: filename };
+                    } else {
+                        console.error('Filename is empty, ignoring this packet.');
+                    }
                 }
+  
                 else if (data[0] === 0xF8) {  // File info packet (size and records)
                     if (!currentSessionInfo) {
                         console.error('Received file info before filename');
