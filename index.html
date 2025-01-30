@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 7:11</title>
+    <title>SwimNav Control 7:18</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -271,7 +271,7 @@
 </head>
 <body>
     <div class="sidebar">
-        <h1>SwimNav Control 7:13</h1>
+        <h1>SwimNav Control</h1>
         <button id="connectBtn" onclick="connect()">Connect to Device</button>
         <div id="bleStatus" class="control">Status: Disconnected</div>
 
@@ -612,6 +612,8 @@
                     } else {
                         console.error('Filename is empty, ignoring this packet.');
                     }
+                
+                    console.log('Current available sessions:', availableSessions);
                 }
   
                 else if (data[0] === 0xF8) {  // File info packet (size and records)
