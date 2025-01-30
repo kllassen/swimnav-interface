@@ -641,11 +641,15 @@
                 // Extract packet components
                 const packetId = (data[0] << 8) | data[1];
                 const packetData = data.slice(2, -2);  // Remove ID and checksum
-                const receivedChecksum = (data[data.length - 2] << 8) | data[data.length - 1];
+                const checksumIndex = data.length - 2; // Location of checksum bytes
+                console.log(`Extracting checksum from index ${checksumIndex}`);
+                console.log(`Raw checksum bytes: ${data[checksumIndex].toString(16)}, ${data[checksumIndex + 1].toString(16)}`);
+                
+                const receivedChecksum = (data[checksumIndex] << 8) | data[checksumIndex + 1];
                 
                 console.log('Received packet ID:', packetId);
                 console.log('Packet data:', Array.from(packetData).map(b => b.toString(16)));
-            
+                console.log('Full received data:', Array.from(data).map(b => b.toString(16)));
 
                 const calculatedChecksum = calculateCRC16(packetData);
 
