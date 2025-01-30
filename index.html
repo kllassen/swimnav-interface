@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 3:18</title>
+    <title>SwimNav Control 3:24</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -592,20 +592,31 @@
                     }
                 }
 
-                    else if (data[0] === 0xFB) {  // Session count packet
-                        const sessionCount = data[1];
-                        availableSessions = [];
-                        expectedSessions = sessionCount;
-                        receivedSessions = 0;
-                        console.log('Expected sessions:', sessionCount);
-                        console.log('Cleared availableSessions array');
-                        
-                        // If no sessions, show empty list
-                        if (sessionCount === 0) {
-                            console.log('No sessions available, showing empty list');
-                            showSessionsList([]);
-                        }
+                else if (data[0] === 0xFB) {  // Session count packet
+                    const sessionCount = data[1];
+                    console.log('Received session count packet:', {
+                        rawData: Array.from(data),
+                        sessionCount: sessionCount,
+                        packetType: '0xFB'
+                    });
+                    availableSessions = [];
+                    expectedSessions = sessionCount;
+                    receivedSessions = 0;
+                    console.log('Initialized session tracking:', {
+                        expectedSessions,
+                        receivedSessions,
+                        availableSessionsLength: availableSessions.length
+                    });
+                
+                    // If no sessions, show empty list
+                    if (sessionCount === 0) {
+                        console.log('No sessions available, showing empty list');
+                        showSessionsList([]);
+                        return;
+                    } else {
+                        console.log(`Expecting ${sessionCount} sessions...`);
                     }
+                }
 
                 else if (data[0] === 0xF9) {  // Session info packet (filename)
                     console.log('Raw filename data:', Array.from(data));
@@ -989,8 +1000,26 @@
         }
 
         function showSessionsList(sessions) {
-            console.log('Attempting to display session list...');
-            console.log('Sessions received:', sessions);
+            console.log('showSessionsList called with:', {
+                sessionsProvided: !!sessions,
+                sessionCount: sessions ? sessions.length : 0,
+                sessions: sessions
+            });
+        
+            const overlay = document.getElementById('sessionOverlay');
+            const dialog = document.getElementById('sessionDialog');
+            const sessionList = document.getElementById('sessionList');
+        
+            console.log('DOM elements:', {
+                overlay: !!overlay,
+                dialog: !!dialog,
+                sessionList: !!sessionList
+            });
+        
+            if (!overlay || !dialog || !sessionList) {
+                console.error('Required DOM elements not found');
+                return;
+            }
         
             const sessionList = document.getElementById('sessionList');
         
