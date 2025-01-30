@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 3:00</title>
+    <title>SwimNav Control 3:14</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -591,13 +591,21 @@
                         updateWaypointsList();
                     }
                 }
-                else if (data[0] === 0xFB) {  // Session count packet
-                    const sessionCount = data[1];
-                    availableSessions = [];
-                    expectedSessions = sessionCount;
-                    receivedSessions = 0;
-                    console.log('Expected sessions:', sessionCount);
-                }
+
+                    else if (data[0] === 0xFB) {  // Session count packet
+                        const sessionCount = data[1];
+                        availableSessions = [];
+                        expectedSessions = sessionCount;
+                        receivedSessions = 0;
+                        console.log('Expected sessions:', sessionCount);
+                        console.log('Cleared availableSessions array');
+                        
+                        // If no sessions, show empty list
+                        if (sessionCount === 0) {
+                            console.log('No sessions available, showing empty list');
+                            showSessionsList([]);
+                        }
+                    }
 
                 else if (data[0] === 0xF9) {  // Session info packet (filename)
                     console.log('Raw filename data:', Array.from(data));
