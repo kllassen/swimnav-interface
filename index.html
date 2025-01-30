@@ -615,7 +615,7 @@
   
                 else if (data[0] === 0xF8) {  // File info packet (size and records)
                     if (!currentSessionInfo) {
-                        console.error('Received file info before filename');
+                        console.error('Received file info before filename, ignoring packet.');
                         return;
                     }
                     
@@ -623,17 +623,23 @@
                     const size = view.getUint32(1, true);
                     const records = view.getUint32(5, true);
                     
-                    console.log('Received file info:', { size, records });
-                    
-                    // Complete the session info and add to list
+                    console.log('Received file info:', { filename: currentSessionInfo.filename, size, records });
+                
+                    // Ensure the session info is stored correctly
                     currentSessionInfo.size = size;
                     currentSessionInfo.records = records;
                     availableSessions.push(currentSessionInfo);
+                    console.log('Updated session list:', availableSessions);
+                
                     currentSessionInfo = null;
                     receivedSessions++;
-                    
-                    if (receivedSessions >= expectedSessions) {
+                
+                    // Force display of the file selection UI
+                    if (availableSessions.length > 0) {
+                        console.log('Displaying session list...');
                         showSessionsList(availableSessions);
+                    } else {
+                        console.error('No valid sessions found.');
                     }
                 }
             }
