@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 3:14</title>
+    <title>SwimNav Control 3:18</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -611,7 +611,7 @@
                     console.log('Raw filename data:', Array.from(data));
                 
                     const decoder = new TextDecoder();
-                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
+                    const filename = decoder.decode(data.slice(2, data.length-2)).replace(/\0/g, '').trim();
                     
                     console.log('Processed filename:', filename);
                     
@@ -621,44 +621,35 @@
                     } else {
                         console.error('Filename is empty, ignoring this packet.');
                     }
-                
-                    console.log('Current available sessions BEFORE file info:', availableSessions);
                 }
   
-                else if (data[0] === 0xF8) {  // File info packet (size and records)
-                    if (!currentSessionInfo) {
-                        console.error('Received file info before filename, ignoring packet.');
-                        return;
+                    else if (data[0] === 0xF8) {  // File info packet (size and records)
+                        if (!currentSessionInfo) {
+                            console.error('Received file info before filename, ignoring packet.');
+                            return;
+                        }
+                    
+                        const view = new DataView(data.buffer);
+                        const size = view.getUint32(2, true);  // Adjusted offset to account for packet ID
+                        const records = view.getUint32(6, true);  // Adjusted offset to account for packet ID
+                    
+                        console.log('Received file info:', { filename: currentSessionInfo.filename, size, records });
+                    
+                        currentSessionInfo.size = size;
+                        currentSessionInfo.records = records;
+                    
+                        availableSessions.push({ ...currentSessionInfo });
+                        console.log('Session added to availableSessions:', currentSessionInfo);
+                        console.log('Updated availableSessions list:', availableSessions);
+                    
+                        currentSessionInfo = null;
+                        receivedSessions++;
+                    
+                        if (receivedSessions === expectedSessions) {
+                            console.log('All sessions received, showing list...');
+                            showSessionsList(availableSessions);
+                        }
                     }
-                
-                    const view = new DataView(data.buffer);
-                    const size = view.getUint32(1, true);
-                    const records = view.getUint32(5, true);
-                
-                    console.log('Received file info:', { filename: currentSessionInfo.filename, size, records });
-                
-                    // Ensure the session info is stored correctly
-                    currentSessionInfo.size = size;
-                    currentSessionInfo.records = records;
-                
-                    // Add session to availableSessions list
-                    availableSessions.push({ ...currentSessionInfo });
-                    console.log('Session added to availableSessions:', currentSessionInfo);
-                    console.log('Updated availableSessions list:', availableSessions);
-                
-                    currentSessionInfo = null;
-                    receivedSessions++;
-                
-                    console.log(`Total received sessions so far: ${receivedSessions}`);
-                
-                    // Check if availableSessions contains data before calling showSessionsList()
-                    if (availableSessions.length > 0) {
-                        console.log('Calling showSessionsList() with', availableSessions.length, 'files...');
-                        showSessionsList(availableSessions);
-                    } else {
-                        console.error('availableSessions is empty, file list will not be displayed.');
-                    }
-                }
             }
             
             // Download packets
