@@ -622,11 +622,11 @@
                         console.error('Received file info before filename, ignoring packet.');
                         return;
                     }
-                    
+                
                     const view = new DataView(data.buffer);
                     const size = view.getUint32(1, true);
                     const records = view.getUint32(5, true);
-                    
+                
                     console.log('Received file info:', { filename: currentSessionInfo.filename, size, records });
                 
                     // Ensure the session info is stored correctly
@@ -635,24 +635,21 @@
                 
                     // Add session to availableSessions list
                     availableSessions.push({ ...currentSessionInfo });
-                    console.log('Updated session list:', availableSessions);
+                    console.log('Session added to availableSessions:', currentSessionInfo);
+                    console.log('Updated availableSessions list:', availableSessions);
                 
                     currentSessionInfo = null;
                     receivedSessions++;
                 
-                    // Force display of the file selection UI
-                    console.log(`Total received sessions: ${receivedSessions}`);
-                    console.log('Final available sessions list before display:', availableSessions);
-                    
-                console.log('Final available sessions list before display:', availableSessions);
+                    console.log(`Total received sessions so far: ${receivedSessions}`);
                 
-                if (availableSessions.length > 0) {
-                    console.log('Displaying session list with', availableSessions.length, 'files...');
-                    showSessionsList(availableSessions);
-                } else {
-                    console.error('No valid sessions found. availableSessions is empty.');
-                }
-
+                    // Check if availableSessions contains data before calling showSessionsList()
+                    if (availableSessions.length > 0) {
+                        console.log('Calling showSessionsList() with', availableSessions.length, 'files...');
+                        showSessionsList(availableSessions);
+                    } else {
+                        console.error('availableSessions is empty, file list will not be displayed.');
+                    }
                 }
             }
             
