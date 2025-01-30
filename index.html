@@ -466,6 +466,9 @@
         let receivedSessions = 0;
         let currentSessionInfo = null;
         let currentDownloadIndex = 0;
+        let availableSessions = [];
+        let selectedSessions = [];
+        let currentDownloadIndex = 0;
 
         async function sendAck(packetId) {
             if (!rxCharacteristic) return false;
@@ -967,6 +970,44 @@
             }
             document.getElementById('download-status').textContent = message;
         }
+
+         function showSessionsList(sessions) {
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = sessions.map(session => `
+                <div class="session-item">
+                    <input type="checkbox" data-filename="${session.filename}">
+                    <div class="session-info">
+                        <div>Filename: ${session.filename}</div>
+                        <div>Records: ${session.records}</div>
+                        <div>Size: ${(session.size / 1024).toFixed(2)} KB</div>
+                    </div>
+                </div>
+            `).join('');
+        
+            document.getElementById('sessionOverlay').style.display = 'block';
+            document.getElementById('sessionDialog').style.display = 'block';
+        }
+        
+        function cancelSessionDialog() {
+            document.getElementById('sessionOverlay').style.display = 'none';
+            document.getElementById('sessionDialog').style.display = 'none';
+        }
+        
+        function downloadSelectedSessions() {
+            const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
+                .map(checkbox => availableSessions.find(s => s.filename === checkbox.dataset.filename));
+            
+            if (selectedSessions.length === 0) {
+                alert('Please select at least one session to download');
+                return;
+            }
+            
+            cancelSessionDialog();
+            isDownloading = true;
+            downloadBuffer = '';
+            currentDownloadIndex = 0;
+            startDownloadingSession(selectedSessions);
+        }       
 
         function saveToFile() {
             let filename = prompt("Enter a name for this configuration:", "swimnav-config");
