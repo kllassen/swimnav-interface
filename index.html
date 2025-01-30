@@ -630,24 +630,22 @@
                 }
             }
             
-                // Download packets
-                if (isDownloading) {
-                    // First verify we have at least 4 bytes (minimum for ID and checksum)
-                    if (data.length < 4) {
-                        console.error('Received packet too short');
-                        return;
-                    }
-                
-                    // Extract packet components
-                    const packetId = (data[0] << 8) | data[1];
-                    const packetData = data.slice(2, -2);  // Remove ID and checksum
-                    const receivedChecksum = (data[data.length - 2] << 8) | data[data.length - 1];
-                    
-                    console.log('Received packet ID:', packetId);
-                    console.log('Packet data:', Array.from(packetData).map(b => b.toString(16)));
-                
-                // Verify checksum only for download packets
+            // Download packets
+            if (isDownloading) {
+                // First verify we have at least 4 bytes (minimum for ID and checksum)
+                if (data.length < 4) {
+                    console.error('Received packet too short');
+                    return;
+                }
+            
+                // Extract packet components
+                const packetId = (data[0] << 8) | data[1];
+                const packetData = data.slice(2, -2);  // Remove ID and checksum
                 const receivedChecksum = (data[data.length - 2] << 8) | data[data.length - 1];
+                
+                console.log('Received packet ID:', packetId);
+                console.log('Packet data:', Array.from(packetData).map(b => b.toString(16)));
+            
                 const calculatedChecksum = calculateCRC16(packetData);
                 
                 if (receivedChecksum === calculatedChecksum) {
