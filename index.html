@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 2:33</title>
+    <title>SwimNav Control 2:37</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -643,12 +643,14 @@
                     console.log(`Total received sessions: ${receivedSessions}`);
                     console.log('Final available sessions list before display:', availableSessions);
                     
-                    if (availableSessions.length > 0) {
-                        console.log('Displaying session list with', availableSessions.length, 'files...');
-                        showSessionsList(availableSessions);
-                    } else {
-                        console.error('No valid sessions found. Check why availableSessions is empty.');
-                    }
+                console.log('Final available sessions list before display:', availableSessions);
+                
+                if (availableSessions.length > 0) {
+                    console.log('Displaying session list with', availableSessions.length, 'files...');
+                    showSessionsList(availableSessions);
+                } else {
+                    console.error('No valid sessions found. availableSessions is empty.');
+                }
 
                 }
             }
