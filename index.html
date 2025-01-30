@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 7:30</title>
+    <title>SwimNav Control 2:33</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -990,7 +990,17 @@
         }
 
         function showSessionsList(sessions) {
+            console.log('Attempting to display session list...');
+            console.log('Sessions received:', sessions);
+        
             const sessionList = document.getElementById('sessionList');
+        
+            if (!sessions || sessions.length === 0) {
+                console.error('No sessions available to display.');
+                sessionList.innerHTML = '<p>No sessions found.</p>';
+                return;
+            }
+        
             sessionList.innerHTML = sessions.map(session => `
                 <div class="session-item">
                     <input type="checkbox" data-filename="${session.filename}">
@@ -1002,8 +1012,11 @@
                 </div>
             `).join('');
         
+            console.log('Session list updated in UI.');
+        
             document.getElementById('sessionOverlay').style.display = 'block';
             document.getElementById('sessionDialog').style.display = 'block';
+            console.log('Session dialog displayed.');
         }
         
         function cancelSessionDialog() {
