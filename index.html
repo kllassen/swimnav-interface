@@ -674,24 +674,13 @@
                         const sessionInfo = availableSessions[currentDownloadIndex];
                         updateDownloadStatus(`Downloading ${sessionInfo.filename}... ${downloadProgress}%`);
                     }
+
                     else if (packetData[0] === 0xFC) { // Complete packet
-                        console.log('Download complete, saving file');
-                        const sessionInfo = availableSessions[currentDownloadIndex];
-                        saveLogData(sessionInfo.filename);
-                        
-                        // Move to next file if there are more
-                        currentDownloadIndex++;
-                        if (currentDownloadIndex < availableSessions.length) {
-                            startDownloadingSession(availableSessions);
-                        } else {
-                            isDownloading = false;
-                            updateDownloadStatus('All downloads complete!');
-                            setTimeout(() => {
-                                const status = document.getElementById('download-status');
-                                if (status) status.remove();
-                            }, 3000);
-                        }
+                        console.log('Download complete for:', availableSessions[currentDownloadIndex].filename);
+                        await handleDownloadComplete();
                     }
+
+
                 } else {
                     console.log('Checksum verification failed');
                 }
@@ -871,33 +860,54 @@
             // which will populate the session dialog through showSessionsList()
         }
 
-            async function startDownloadingSession(sessions) {
-                if (!sessions || sessions.length === 0) return;
-                
-                try {
-                    const session = sessions[currentDownloadIndex];
-                    console.log('Starting download for session:', session);
-                    updateDownloadStatus(`Downloading ${session.filename}... (${currentDownloadIndex + 1}/${sessions.length})`);
-                    
-                    // Send download command with current session filename
-                    const encoder = new TextEncoder();
-                    const filenameBytes = encoder.encode(session.filename);
-                    const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
-                    cmdBuffer[0] = 9;  // Command 9
-                    cmdBuffer.set(filenameBytes, 1);
-                    
-                    console.log('Sending command buffer:', Array.from(cmdBuffer));
-                    await rxCharacteristic.writeValue(cmdBuffer);
-                    console.log('Command sent successfully');
-                    
-                    // The handleData function will process the incoming data and save the file
-                    // When complete, it will trigger the next download
-                } catch (error) {
-                    console.error('Error starting download:', error);
-                    updateDownloadStatus('Download failed: ' + error.message);
-                    isDownloading = false;
-                }
+        async function startDownloadingSession(sessions) {
+            if (!sessions || sessions.length === 0) return;
+            
+            try {
+                currentDownloadIndex = 0;  // Reset index before starting
+                await requestNextSession(sessions);
+            } catch (error) {
+                console.error('Error starting download:', error);
+                updateDownloadStatus('Download failed: ' + error.message);
+                isDownloading = false;
             }
+        }
+        
+        // Function to request the next session for download
+        async function requestNextSession(sessions) {
+            if (currentDownloadIndex >= sessions.length) {
+                isDownloading = false;
+                updateDownloadStatus('All downloads complete!');
+                return;
+            }
+        
+            const session = sessions[currentDownloadIndex];
+            console.log('Downloading:', session.filename);
+            updateDownloadStatus(`Downloading ${session.filename}...`);
+        
+            const encoder = new TextEncoder();
+            const filenameBytes = encoder.encode(session.filename);
+            const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+            cmdBuffer[0] = 9;  // Command 9 - Start download
+            cmdBuffer.set(filenameBytes, 1);
+        
+            try {
+                await rxCharacteristic.writeValue(cmdBuffer);
+                console.log('Request sent for:', session.filename);
+            } catch (error) {
+                console.error('Failed to send request:', error);
+            }
+        }
+        
+        // Handle packet completion
+        async function handleDownloadComplete() {
+            const session = availableSessions[currentDownloadIndex];
+            saveLogData(session.filename);
+        
+            currentDownloadIndex++;
+            await requestNextSession(availableSessions);
+        }
+
         
             function saveLogData(filename) {
                 // Create metadata header with both filenames
@@ -943,15 +953,15 @@
             document.getElementById('download-status').textContent = message;
         }
 
-         function showSessionsList(sessions) {
+        function showSessionsList(sessions) {
             const sessionList = document.getElementById('sessionList');
             sessionList.innerHTML = sessions.map(session => `
                 <div class="session-item">
                     <input type="checkbox" data-filename="${session.filename}">
                     <div class="session-info">
-                        <div>Filename: ${session.filename}</div>
-                        <div>Records: ${session.records}</div>
-                        <div>Size: ${(session.size / 1024).toFixed(2)} KB</div>
+                        <strong>Filename:</strong> ${session.filename}<br>
+                        <strong>Records:</strong> ${session.records}<br>
+                        <strong>Size:</strong> ${(session.size / 1024).toFixed(2)} KB
                     </div>
                 </div>
             `).join('');
