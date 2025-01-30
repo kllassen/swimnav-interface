@@ -599,15 +599,16 @@
                 }
 
                 else if (data[0] === 0xF9) {  // Session info packet (filename)
-                    console.log('Raw filename data:', Array.from(data)); // Print raw data to debug
-                    
+                    console.log('Raw filename data:', Array.from(data));
+                
                     const decoder = new TextDecoder();
                     const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
                     
                     console.log('Processed filename:', filename);
                     
                     if (filename.length > 0) {
-                        currentSessionInfo = { filename: filename };
+                        currentSessionInfo = { filename: filename, size: 0, records: 0 };
+                        console.log('Stored filename info:', currentSessionInfo);
                     } else {
                         console.error('Filename is empty, ignoring this packet.');
                     }
