@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 7:24</title>
+    <title>SwimNav Control 7:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -518,7 +518,7 @@
                 txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
         
                 await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', );
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
