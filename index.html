@@ -424,18 +424,6 @@
             <div id="map"></div>
         </div>
     </div>
-
-    <div class="overlay" id="sessionOverlay"></div>
-        <div class="session-dialog" id="sessionDialog">
-            <h2>Select Sessions to Download</h2>
-            <div class="session-list" id="sessionList">
-                <!-- Session items will be added here dynamically -->
-            </div>
-            <div class="dialog-buttons">
-                <button onclick="cancelSessionDialog()">Cancel</button>
-                <button onclick="downloadSelectedSessions()" style="margin-left: 10px;">Download</button>
-            </div>
-        </div>
     
     <div class="overlay" id="sessionOverlay"></div>
     <div class="session-dialog" id="sessionDialog">
@@ -468,7 +456,6 @@
         let currentDownloadIndex = 0;
         let availableSessions = [];
         let selectedSessions = [];
-        let currentDownloadIndex = 0;
 
         async function sendAck(packetId) {
             if (!rxCharacteristic) return false;
@@ -487,6 +474,26 @@
                 console.error('Error sending ACK:', error);
                 return false;
             }
+        }
+
+        function waitForAck(timeout) {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                
+                function checkAck() {
+                    if (Date.now() - startTime > timeout) {
+                        resolve(false);  // Timeout
+                        return;
+                    }
+                    
+                    // Check for ACK packet
+                    // If received, resolve(true)
+                    // If not, setTimeout to check again
+                    setTimeout(checkAck, 10);
+                }
+                
+                checkAck();
+            });
         }
         
         function calculateCRC16(data) {
@@ -993,22 +1000,6 @@
             document.getElementById('sessionDialog').style.display = 'none';
         }
         
-        function downloadSelectedSessions() {
-            const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
-                .map(checkbox => availableSessions.find(s => s.filename === checkbox.dataset.filename));
-            
-            if (selectedSessions.length === 0) {
-                alert('Please select at least one session to download');
-                return;
-            }
-            
-            cancelSessionDialog();
-            isDownloading = true;
-            downloadBuffer = '';
-            currentDownloadIndex = 0;
-            startDownloadingSession(selectedSessions);
-        }       
-
         function saveToFile() {
             let filename = prompt("Enter a name for this configuration:", "swimnav-config");
             if (!filename) return;
@@ -1073,14 +1064,6 @@
             
             input.value = '';
         }
-        
-        let availableSessions = [];
-        let selectedSessions = [];
-
-        function cancelSessionDialog() {
-            document.getElementById('sessionOverlay').style.display = 'none';
-            document.getElementById('sessionDialog').style.display = 'none';
-        }
 
         function downloadSelectedSessions() {
             const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
@@ -1101,22 +1084,6 @@
             startDownloadingSession(selectedSessions);
         }
 
-        function showSessionsList(sessions) {
-            const sessionList = document.getElementById('sessionList');
-            sessionList.innerHTML = sessions.map(session => `
-                <div class="session-item">
-                    <input type="checkbox" data-filename="${session.filename}">
-                    <div class="session-info">
-                        <div>Filename: ${session.filename}</div>
-                        <div>Records: ${session.records}</div>
-                        <div>Size: ${(session.size / 1024).toFixed(2)} KB</div>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('sessionOverlay').style.display = 'block';
-            document.getElementById('sessionDialog').style.display = 'block';
-        }
     </script>
 </body>
 </html>
