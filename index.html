@@ -462,16 +462,27 @@
         async function sendPacketWithRetry(data, maxRetries = 3) {
             for (let i = 0; i < maxRetries; i++) {
                 const checksum = calculateCRC16(data);
-                const packetWithChecksum = new Uint8Array(data.length + 2);
-                packetWithChecksum.set(data);
-                packetWithChecksum[data.length] = (checksum >> 8) & 0xFF;
-                packetWithChecksum[data.length + 1] = checksum & 0xFF;
+                const packetWithChecksum = new Uint8Array(data.length + 4);  // +4 for ID and checksum
+                
+                // Add packet ID (2 bytes)
+                packetWithChecksum[0] = (lastPacketId >> 8) & 0xFF;
+                packetWithChecksum[1] = lastPacketId & 0xFF;
+                
+                // Add data
+                packetWithChecksum.set(data, 2);
+                
+                // Add checksum (2 bytes)
+                packetWithChecksum[data.length + 2] = (checksum >> 8) & 0xFF;
+                packetWithChecksum[data.length + 3] = checksum & 0xFF;
                 
                 await rxCharacteristic.writeValue(packetWithChecksum);
                 
                 // Wait for ACK
                 const ack = await waitForAck(1000); // 1 second timeout
-                if (ack) return true;
+                if (ack) {
+                    lastPacketId++;
+                    return true;
+                }
             }
             return false;
         }
