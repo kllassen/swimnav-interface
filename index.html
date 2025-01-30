@@ -211,63 +211,6 @@
         }
 
         .session-dialog {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-            max-height: 80vh;
-            overflow-y: auto;
-            width: 80%;
-            max-width: 600px;
-        }
-
-        .session-list {
-            margin: 15px 0;
-        }
-
-        .session-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .session-item:last-child {
-            border-bottom: none;
-        }
-
-        .session-item input[type="checkbox"] {
-            margin-right: 10px;
-            width: auto;
-        }
-
-        .session-info {
-            flex-grow: 1;
-        }
-
-        .dialog-buttons {
-            margin-top: 15px;
-            text-align: right;
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-
-        .session-dialog {
                     display: none;
                     position: fixed;
                     top: 50%;
@@ -456,6 +399,7 @@
         let currentDownloadIndex = 0;
         let availableSessions = [];
         let selectedSessions = [];
+        let lastPacketId = 0;
 
         async function sendAck(packetId) {
             if (!rxCharacteristic) return false;
@@ -480,19 +424,23 @@
             return new Promise((resolve) => {
                 const startTime = Date.now();
                 
-                function checkAck() {
-                    if (Date.now() - startTime > timeout) {
-                        resolve(false);  // Timeout
+                function checkData(event) {
+                    const value = event.target.value;
+                    const data = new Uint8Array(value.buffer);
+                    
+                    if (data[0] === 0xAA) {  // ACK flag
+                        txCharacteristic.removeEventListener('characteristicvaluechanged', checkData);
+                        resolve(true);
                         return;
                     }
-                    
-                    // Check for ACK packet
-                    // If received, resolve(true)
-                    // If not, setTimeout to check again
-                    setTimeout(checkAck, 10);
                 }
                 
-                checkAck();
+                txCharacteristic.addEventListener('characteristicvaluechanged', checkData);
+                
+                setTimeout(() => {
+                    txCharacteristic.removeEventListener('characteristicvaluechanged', checkData);
+                    resolve(false);
+                }, timeout);
             });
         }
         
