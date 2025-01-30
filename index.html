@@ -516,12 +516,15 @@
             updateWaypointsList();
         }
         
-       async function handleData(event) {
+        async function handleData(event) {
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
             
             // Regular packets when not downloading
             if (!isDownloading) {
+                console.log('Received regular packet type:', data[0].toString(16));
+                console.log('Packet data:', Array.from(data).map(b => b.toString(16)));
+                
                 if (data[0] === 0xFF && data.length === 5) {
                     document.getElementById('errorCone').value = data[1].toString();
                     document.getElementById('waypointZone').value = data[2].toString();
@@ -554,6 +557,7 @@
                     availableSessions = [];
                     expectedSessions = sessionCount;
                     receivedSessions = 0;
+                    console.log('Expected sessions:', sessionCount);
                 }
                 else if (data[0] === 0xF9) {  // Session info packet (filename)
                     const decoder = new TextDecoder();
@@ -587,6 +591,7 @@
                     }
                 }
             }
+            
             // Download packets
             if (isDownloading) {
                 // Extract packet ID and data from received packet
@@ -595,7 +600,7 @@
                 console.log('Received packet ID:', packetId);
                 console.log('Packet data:', Array.from(packetData).map(b => b.toString(16)));
                 
-                // Verify checksum
+                // Verify checksum only for download packets
                 const receivedChecksum = (data[data.length - 2] << 8) | data[data.length - 1];
                 const calculatedChecksum = calculateCRC16(packetData);
                 
