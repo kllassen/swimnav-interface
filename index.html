@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 2:37</title>
+    <title>SwimNav Control 2:43</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -518,7 +518,7 @@
                 txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
         
                 await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                txCharacteristic.addEventListener('characteristicvaluechanged', );
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
@@ -613,7 +613,7 @@
                         console.error('Filename is empty, ignoring this packet.');
                     }
                 
-                    console.log('Current available sessions:', availableSessions);
+                    console.log('Current available sessions BEFORE file info:', availableSessions);
                 }
   
                 else if (data[0] === 0xF8) {  // File info packet (size and records)
