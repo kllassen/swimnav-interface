@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 3:24</title>
+    <title>SwimNav Control 3:33</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -999,53 +999,51 @@
             document.getElementById('download-status').textContent = message;
         }
 
-        function showSessionsList(sessions) {
-            console.log('showSessionsList called with:', {
-                sessionsProvided: !!sessions,
-                sessionCount: sessions ? sessions.length : 0,
-                sessions: sessions
-            });
-        
-            const overlay = document.getElementById('sessionOverlay');
-            const dialog = document.getElementById('sessionDialog');
-            const sessionList = document.getElementById('sessionList');
-        
-            console.log('DOM elements:', {
-                overlay: !!overlay,
-                dialog: !!dialog,
-                sessionList: !!sessionList
-            });
-        
-            if (!overlay || !dialog || !sessionList) {
-                console.error('Required DOM elements not found');
-                return;
-            }
-        
-            const sessionList = document.getElementById('sessionList');
-        
-            if (!sessions || sessions.length === 0) {
-                console.error('No sessions available to display.');
-                sessionList.innerHTML = '<p>No sessions found.</p>';
-                return;
-            }
-        
-            sessionList.innerHTML = sessions.map(session => `
-                <div class="session-item">
-                    <input type="checkbox" data-filename="${session.filename}">
-                    <div class="session-info">
-                        <strong>Filename:</strong> ${session.filename}<br>
-                        <strong>Records:</strong> ${session.records}<br>
-                        <strong>Size:</strong> ${(session.size / 1024).toFixed(2)} KB
-                    </div>
-                </div>
-            `).join('');
-        
-            console.log('Session list updated in UI.');
-        
-            document.getElementById('sessionOverlay').style.display = 'block';
-            document.getElementById('sessionDialog').style.display = 'block';
-            console.log('Session dialog displayed.');
+       function showSessionsList(sessions) {
+        console.log('showSessionsList called with:', {
+            sessionsProvided: !!sessions,
+            sessionCount: sessions ? sessions.length : 0,
+            sessions: sessions
+        });
+    
+        const overlay = document.getElementById('sessionOverlay');
+        const dialog = document.getElementById('sessionDialog');
+        const sessionList = document.getElementById('sessionList');
+    
+        console.log('DOM elements:', {
+            overlay: !!overlay,
+            dialog: !!dialog,
+            sessionList: !!sessionList
+        });
+    
+        if (!overlay || !dialog || !sessionList) {
+            console.error('Required DOM elements not found');
+            return;
         }
+    
+        if (!sessions || sessions.length === 0) {
+            console.error('No sessions available to display.');
+            sessionList.innerHTML = '<p>No sessions found.</p>';
+            return;
+        }
+    
+        sessionList.innerHTML = sessions.map(session => `
+            <div class="session-item">
+                <input type="checkbox" data-filename="${session.filename}">
+                <div class="session-info">
+                    <strong>Filename:</strong> ${session.filename}<br>
+                    <strong>Records:</strong> ${session.records}<br>
+                    <strong>Size:</strong> ${(session.size / 1024).toFixed(2)} KB
+                </div>
+            </div>
+        `).join('');
+    
+        console.log('Session list updated in UI.');
+    
+        document.getElementById('sessionOverlay').style.display = 'block';
+        document.getElementById('sessionDialog').style.display = 'block';
+        console.log('Session dialog displayed.');
+    }     
         
         function cancelSessionDialog() {
             document.getElementById('sessionOverlay').style.display = 'none';
