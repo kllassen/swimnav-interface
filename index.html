@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 3:33</title>
+    <title>SwimNav Control 3:39</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -594,15 +594,17 @@
 
                 else if (data[0] === 0xFB) {  // Session count packet
                     const sessionCount = data[1];
-                    console.log('Received session count packet:', {
-                        rawData: Array.from(data),
+                    console.log('FB PACKET RECEIVED:', {
+                        rawData: Array.from(data).map(b => b.toString(16)),
                         sessionCount: sessionCount,
-                        packetType: '0xFB'
+                        packetLength: data.length
                     });
                     availableSessions = [];
                     expectedSessions = sessionCount;
                     receivedSessions = 0;
-                    console.log('Initialized session tracking:', {
+                    updateDownloadStatus(`Found ${sessionCount} sessions`);
+                    
+                    console.log('Session tracking initialized:', {
                         expectedSessions,
                         receivedSessions,
                         availableSessionsLength: availableSessions.length
@@ -610,14 +612,14 @@
                 
                     // If no sessions, show empty list
                     if (sessionCount === 0) {
-                        console.log('No sessions available, showing empty list');
+                        console.log('No sessions available');
                         showSessionsList([]);
                         return;
                     } else {
-                        console.log(`Expecting ${sessionCount} sessions...`);
+                        console.log(`Waiting for ${sessionCount} session details...`);
                     }
                 }
-
+                    
                 else if (data[0] === 0xF9) {  // Session info packet (filename)
                     console.log('Raw filename data:', Array.from(data));
                 
