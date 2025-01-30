@@ -266,6 +266,63 @@
             background: rgba(0,0,0,0.5);
             z-index: 999;
         }
+
+        .session-dialog {
+                    display: none;
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    width: 80%;
+                    max-width: 600px;
+                }
+        
+                .session-list {
+                    margin: 15px 0;
+                }
+        
+                .session-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 10px;
+                    border-bottom: 1px solid #eee;
+                }
+        
+                .session-item:last-child {
+                    border-bottom: none;
+                }
+        
+                .session-item input[type="checkbox"] {
+                    margin-right: 10px;
+                    width: auto;
+                }
+        
+                .session-info {
+                    flex-grow: 1;
+                }
+        
+                .dialog-buttons {
+                    margin-top: 15px;
+                    text-align: right;
+                }
+        
+                .overlay {
+                    display: none;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 999;
+                }
         
     </style>
 </head>
@@ -368,6 +425,18 @@
         </div>
     </div>
 
+    <div class="overlay" id="sessionOverlay"></div>
+        <div class="session-dialog" id="sessionDialog">
+            <h2>Select Sessions to Download</h2>
+            <div class="session-list" id="sessionList">
+                <!-- Session items will be added here dynamically -->
+            </div>
+            <div class="dialog-buttons">
+                <button onclick="cancelSessionDialog()">Cancel</button>
+                <button onclick="downloadSelectedSessions()" style="margin-left: 10px;">Download</button>
+            </div>
+        </div>
+    
     <div class="overlay" id="sessionOverlay"></div>
     <div class="session-dialog" id="sessionDialog">
         <h2>Select Sessions to Download</h2>
