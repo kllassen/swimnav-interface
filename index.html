@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 7:18</title>
+    <title>SwimNav Control 7:21</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -631,13 +631,16 @@
                     // Ensure the session info is stored correctly
                     currentSessionInfo.size = size;
                     currentSessionInfo.records = records;
-                    availableSessions.push(currentSessionInfo);
+                
+                    // Add session to availableSessions list
+                    availableSessions.push({ ...currentSessionInfo });
                     console.log('Updated session list:', availableSessions);
                 
                     currentSessionInfo = null;
                     receivedSessions++;
                 
                     // Force display of the file selection UI
+                    console.log(`Total received sessions: ${receivedSessions}`);
                     if (availableSessions.length > 0) {
                         console.log('Displaying session list...');
                         showSessionsList(availableSessions);
