@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:15</title>
+    <title>SwimNav Control 8:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1075,27 +1075,22 @@
         function downloadSelectedSessions() {
             const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
                 .map(checkbox => {
-                    const filename = checkbox.dataset.filename;
-                    return availableSessions.find(s => s.filename === filename);
+                    const sessionInfo = availableSessions.find(s => s.filename === checkbox.dataset.filename);
+                    return sessionInfo;
                 })
-                .filter(session => session !== undefined);
-            
-            console.log('Selected sessions:', selectedSessions);
+                .filter(session => session !== undefined);  // Ensure we have valid sessions
             
             if (selectedSessions.length === 0) {
                 alert('Please select at least one session to download');
                 return;
             }
             
+            console.log('Starting download of selected sessions:', selectedSessions);
+            
             cancelSessionDialog();
             isDownloading = true;
             downloadBuffer = '';
             currentDownloadIndex = 0;
-            
-            // Store only the selected sessions for downloading
-            availableSessions = selectedSessions;
-            console.log('Starting download of selected sessions:', availableSessions);
-            
             startDownloadingSession(selectedSessions);
         }
 
