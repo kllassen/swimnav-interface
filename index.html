@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:30</title>
+    <title>SwimNav Control 8:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -626,39 +626,46 @@
                 }
             }
             
-            // Download packets
-            if (isDownloading) {
-                if (data.length < 4) {
-                    console.error('Received packet too short');
-                    return;
-                }
+                // Download packets
+                if (isDownloading) {
+                    // First verify we have at least 4 bytes (minimum for ID and checksum)
+                    if (data.length < 4) {
+                        console.error('Received packet too short');
+                        return;
+                    }
                 
-                const packetId = (data[0] << 8) | data[1];
-                const packetData = data.slice(2, -2);
-                const checksumIndex = data.length - 2;
-                const receivedChecksum = (data[checksumIndex] << 8) | data[checksumIndex + 1];
-                const calculatedChecksum = calculateCRC16(packetData);
+                    // Extract packet components
+                    const packetId = (data[0] << 8) | data[1];
+                    const checksumIndex = data.length - 2;
+                    const packetData = data.slice(2, checksumIndex);
+                    console.log('Download packet:', {
+                        id: packetId,
+                        type: packetData[0].toString(16),
+                        length: packetData.length
+                    });
                 
-                if (receivedChecksum === calculatedChecksum || true) {
+                    const receivedChecksum = (data[checksumIndex] << 8) | data[checksumIndex + 1];
+                    const calculatedChecksum = calculateCRC16(packetData);
+                
                     await sendAck(packetId);
                     
-                    if (packetData[0] === 0xFA) {
+                    if (packetData[0] === 0xFA) { // File start packet
                         downloadBuffer = '';
                         downloadProgress = 0;
                         const sessionInfo = availableSessions[currentDownloadIndex];
                         updateDownloadStatus(`Downloading ${sessionInfo.filename}... 0%`);
                     }
-                    else if (packetData[0] === 0xFD) {
+                    else if (packetData[0] === 0xFD) { // Data packet
                         const textDecoder = new TextDecoder();
                         const logData = textDecoder.decode(packetData.slice(1));
                         downloadBuffer += logData;
                     }
-                    else if (packetData[0] === 0xFF) {
+                    else if (packetData[0] === 0xFF) { // Progress packet
                         downloadProgress = packetData[1];
                         const sessionInfo = availableSessions[currentDownloadIndex];
                         updateDownloadStatus(`Downloading ${sessionInfo.filename}... ${downloadProgress}%`);
                     }
-                    else if (packetData[0] === 0xFC) {
+                    else if (packetData[0] === 0xFC) { // Complete packet
                         await handleDownloadComplete();
                     }
                 }
@@ -851,27 +858,49 @@
         
         // Function to request the next session for download
         async function requestNextSession(sessions) {
+            if (!sessions || !Array.isArray(sessions)) {
+                console.error('Invalid sessions array:', sessions);
+                isDownloading = false;
+                updateDownloadStatus('Download error: Invalid session data');
+                return;
+            }
+        
             if (currentDownloadIndex >= sessions.length) {
+                console.log('All downloads complete');
                 isDownloading = false;
                 updateDownloadStatus('All downloads complete!');
                 return;
             }
         
             const session = sessions[currentDownloadIndex];
-            console.log('Downloading:', session.filename);
+            if (!session || !session.filename) {
+                console.error('Invalid session at index:', currentDownloadIndex);
+                isDownloading = false;
+                updateDownloadStatus('Download error: Invalid session');
+                return;
+            }
+        
+            console.log('Starting download for session:', {
+                index: currentDownloadIndex,
+                total: sessions.length,
+                filename: session.filename,
+                size: session.size
+            });
+            
             updateDownloadStatus(`Downloading ${session.filename}...`);
         
-            const encoder = new TextEncoder();
-            const filenameBytes = encoder.encode(session.filename);
-            const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
-            cmdBuffer[0] = 9;  // Command 9 - Start download
-            cmdBuffer.set(filenameBytes, 1);
-        
             try {
+                const encoder = new TextEncoder();
+                const filenameBytes = encoder.encode(session.filename);
+                const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+                cmdBuffer[0] = 9;  // Command 9 - Start download
+                cmdBuffer.set(filenameBytes, 1);
+        
                 await rxCharacteristic.writeValue(cmdBuffer);
-                console.log('Request sent for:', session.filename);
+                console.log('Download request sent for:', session.filename);
             } catch (error) {
-                console.error('Failed to send request:', error);
+                console.error('Failed to send download request:', error);
+                updateDownloadStatus(`Error downloading ${session.filename}`);
             }
         }
         
