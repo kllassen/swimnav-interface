@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 9:20</title>
+    <title>SwimNav Control 9:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1129,23 +1129,46 @@
         function downloadSelectedSessions() {
             const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
                 .map(checkbox => {
-                    const sessionInfo = availableSessions.find(s => s.filename === checkbox.dataset.filename);
-                    return sessionInfo;
-                })
-                .filter(session => session !== undefined);  // Ensure we have valid sessions
-            
+                    return availableSessions.find(s => s.filename === checkbox.dataset.filename);
+                });
+        
             if (selectedSessions.length === 0) {
                 alert('Please select at least one session to download');
                 return;
             }
-            
-            console.log('Starting download of selected sessions:', selectedSessions);
-            
+        
+            // Get only the FIRST selected session to prevent downloading all
+            const sessionToDownload = selectedSessions[0];
+        
+            console.log(`Starting download for: ${sessionToDownload.filename}`);
+        
             cancelSessionDialog();
             isDownloading = true;
             downloadBuffer = '';
-            currentDownloadIndex = 0;
-            startDownloadingSession(selectedSessions);
+            startDownloadingSingleSession(sessionToDownload);
+        }
+        
+        // New function to handle single session download
+        async function startDownloadingSingleSession(session) {
+            if (!session) return;
+        
+            try {
+                console.log('Requesting download for:', session.filename);
+                updateDownloadStatus(`Downloading ${session.filename}...`);
+        
+                const encoder = new TextEncoder();
+                const filenameBytes = encoder.encode(session.filename);
+                const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+                cmdBuffer[0] = 9; // Command 9 - Start download
+                cmdBuffer.set(filenameBytes, 1);
+        
+                await rxCharacteristic.writeValue(cmdBuffer);
+                console.log('Download request sent for:', session.filename);
+            } catch (error) {
+                console.error('Failed to send request:', error);
+                updateDownloadStatus('Download failed: ' + error.message);
+                isDownloading = false;
+            }
         }
 
     </script>
