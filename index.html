@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:40</title>
+    <title>SwimNav Control 8:48</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -518,7 +518,7 @@
                 txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
         
                 await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                txCharacteristic.addEventListener('characteristicvaluechanged', );
 
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
@@ -626,50 +626,65 @@
                 }
             }
             
-                // Download packets
-                if (isDownloading) {
-                    // First verify we have at least 4 bytes (minimum for ID and checksum)
-                    if (data.length < 4) {
-                        console.error('Received packet too short');
-                        return;
-                    }
+            // Download packets
+            if (isDownloading) {
+                if (data.length < 5) { // Minimum length: 2 (ID) + 1 (type) + 2 (checksum)
+                    console.error('Received packet too short');
+                    return;
+                }
+        
+                console.log('Raw packet:', Array.from(data).map(b => b.toString(16)));
                 
-                    // Extract packet components
-                    const packetId = (data[0] << 8) | data[1];
-                    const checksumIndex = data.length - 2;
-                    const packetData = data.slice(2, checksumIndex);
-                    console.log('Download packet:', {
-                        id: packetId,
-                        type: packetData[0].toString(16),
-                        length: packetData.length
-                    });
+                // Extract components
+                const packetId = (data[0] << 8) | data[1];
+                const packetType = data[2];
+                const packetContent = data.slice(3, -2);
+                const checksumReceived = (data[data.length - 2] << 8) | data[data.length - 1];
                 
-                    const receivedChecksum = (data[checksumIndex] << 8) | data[checksumIndex + 1];
-                    const calculatedChecksum = calculateCRC16(packetData);
-                
-                    await sendAck(packetId);
-                    
-                    if (packetData[0] === 0xFA) { // File start packet
+                console.log('Processing packet:', {
+                    id: packetId,
+                    type: `0x${packetType.toString(16)}`,
+                    contentLength: packetContent.length
+                });
+        
+                // Send ACK for all packets
+                await sendAck(packetId);
+        
+                // Process by type
+                switch (packetType) {
+                    case 0xFA: // Start packet
                         downloadBuffer = '';
                         downloadProgress = 0;
-                        const sessionInfo = availableSessions[currentDownloadIndex];
-                        updateDownloadStatus(`Downloading ${sessionInfo.filename}... 0%`);
-                    }
-                    else if (packetData[0] === 0xFD) { // Data packet
-                        const textDecoder = new TextDecoder();
-                        const logData = textDecoder.decode(packetData.slice(1));
-                        downloadBuffer += logData;
-                    }
-                    else if (packetData[0] === 0xFF) { // Progress packet
-                        downloadProgress = packetData[1];
-                        const sessionInfo = availableSessions[currentDownloadIndex];
-                        updateDownloadStatus(`Downloading ${sessionInfo.filename}... ${downloadProgress}%`);
-                    }
-                    else if (packetData[0] === 0xFC) { // Complete packet
+                        console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
+                        break;
+        
+                    case 0xFD: // Data packet
+                        try {
+                            const textDecoder = new TextDecoder();
+                            const logData = textDecoder.decode(packetContent);
+                            downloadBuffer += logData;
+                            console.log('Added data chunk, buffer size:', downloadBuffer.length);
+                        } catch (e) {
+                            console.error('Error decoding data packet:', e);
+                        }
+                        break;
+        
+                    case 0xFF: // Progress packet
+                        downloadProgress = packetContent[0];
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
+                        break;
+        
+                    case 0xFC: // Complete packet
+                        console.log('Download complete, saving file...');
                         await handleDownloadComplete();
-                    }
+                        break;
+        
+                    default:
+                        console.log('Unknown packet type:', packetType);
                 }
             }
+        }
 
         function sendCommand(cmd, value) {
             if (!rxCharacteristic) {
