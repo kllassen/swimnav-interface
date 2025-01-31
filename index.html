@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 9:15</title>
+    <title>SwimNav Control 9:20</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -613,9 +613,9 @@
                 
                     const view = new DataView(data.buffer);
                 
-                    // Read 32-bit little-endian file size from bytes 2-5
-                    const size = view.getUint32(2, true);
-                
+                    // File size correction: read bytes individually to ensure proper little-endian interpretation
+                    const size = (view.getUint8(5) << 24) | (view.getUint8(4) << 16) | (view.getUint8(3) << 8) | view.getUint8(2);
+                    
                     // Read 16-bit little-endian record count from bytes 6-7
                     const records = view.getUint16(6, true);
                 
@@ -634,7 +634,6 @@
                         showSessionsList(availableSessions);
                     }
                 }
-
         
             }
             
