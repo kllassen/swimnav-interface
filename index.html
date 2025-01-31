@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:00</title>
+    <title>SwimNav Control 8:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -875,13 +875,49 @@
             }
         }
         
-        // Handle packet completion
         async function handleDownloadComplete() {
             const session = availableSessions[currentDownloadIndex];
-            saveLogData(session.filename);
-        
+            console.log('Download complete for session:', session);
+            
+            if (session && downloadBuffer) {
+                const lines = downloadBuffer.split('\n');
+                const headerLine = lines[0];
+                const dataLines = lines.slice(1);
+                
+                // Create metadata header
+                const metadata = [
+                    `# File: ${session.filename}`,
+                    `# Size: ${(session.size / 1024).toFixed(2)} KB`,
+                    `# Records: ${session.records}`,
+                    `# Downloaded: ${new Date().toISOString()}`,
+                    ''
+                ].join('\n');
+                
+                // Combine metadata with data
+                const processedData = metadata + headerLine + '\n' + dataLines.join('\n');
+                
+                // Save the file
+                const blob = new Blob([processedData], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = session.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            downloadBuffer = '';
             currentDownloadIndex++;
-            await requestNextSession(availableSessions);
+            
+            // Only continue if there are more selected sessions to download
+            if (currentDownloadIndex < availableSessions.length) {
+                await requestNextSession(availableSessions);
+            } else {
+                isDownloading = false;
+                updateDownloadStatus('Downloads complete!');
+            }
         }
 
         
@@ -929,51 +965,42 @@
             document.getElementById('download-status').textContent = message;
         }
 
-       function showSessionsList(sessions) {
-        console.log('showSessionsList called with:', {
-            sessionsProvided: !!sessions,
-            sessionCount: sessions ? sessions.length : 0,
-            sessions: sessions
-        });
-    
-        const overlay = document.getElementById('sessionOverlay');
-        const dialog = document.getElementById('sessionDialog');
-        const sessionList = document.getElementById('sessionList');
-    
-        console.log('DOM elements:', {
-            overlay: !!overlay,
-            dialog: !!dialog,
-            sessionList: !!sessionList
-        });
-    
-        if (!overlay || !dialog || !sessionList) {
-            console.error('Required DOM elements not found');
-            return;
-        }
-    
-        if (!sessions || sessions.length === 0) {
-            console.error('No sessions available to display.');
-            sessionList.innerHTML = '<p>No sessions found.</p>';
-            return;
-        }
-    
-        sessionList.innerHTML = sessions.map(session => `
-            <div class="session-item">
-                <input type="checkbox" data-filename="${session.filename}">
-                <div class="session-info">
-                    <strong>Filename:</strong> ${session.filename}<br>
-                    <strong>Records:</strong> ${session.records}<br>
-                    <strong>Size:</strong> ${(session.size / 1024).toFixed(2)} KB
-                </div>
-            </div>
-        `).join('');
-    
-        console.log('Session list updated in UI.');
-    
-        document.getElementById('sessionOverlay').style.display = 'block';
-        document.getElementById('sessionDialog').style.display = 'block';
-        console.log('Session dialog displayed.');
-    }     
+        function showSessionsList(sessions) {
+            console.log('Showing sessions list:', sessions);
+            
+            const overlay = document.getElementById('sessionOverlay');
+            const dialog = document.getElementById('sessionDialog');
+            const sessionList = document.getElementById('sessionList');
+        
+            if (!overlay || !dialog || !sessionList) {
+                console.error('Required DOM elements not found');
+                return;
+            }
+        
+            if (!sessions || sessions.length === 0) {
+                sessionList.innerHTML = '<p>No sessions found.</p>';
+                return;
+            }
+        
+            sessionList.innerHTML = sessions.map(session => {
+                // Convert size to KB and round to 2 decimal places
+                const sizeInKB = (session.size / 1024).toFixed(2);
+                
+                return `
+                    <div class="session-item">
+                        <input type="checkbox" data-filename="${session.filename}">
+                        <div class="session-info">
+                            <strong>Filename:</strong> ${session.filename}<br>
+                            <strong>Size:</strong> ${sizeInKB} KB<br>
+                            <strong>Records:</strong> ${session.records}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        
+            overlay.style.display = 'block';
+            dialog.style.display = 'block';
+        }     
         
         function cancelSessionDialog() {
             document.getElementById('sessionOverlay').style.display = 'none';
@@ -1048,9 +1075,12 @@
         function downloadSelectedSessions() {
             const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
                 .map(checkbox => {
-                    const sessionInfo = availableSessions.find(s => s.filename === checkbox.dataset.filename);
-                    return sessionInfo;
-                });
+                    const filename = checkbox.dataset.filename;
+                    return availableSessions.find(s => s.filename === filename);
+                })
+                .filter(session => session !== undefined);
+            
+            console.log('Selected sessions:', selectedSessions);
             
             if (selectedSessions.length === 0) {
                 alert('Please select at least one session to download');
@@ -1061,6 +1091,11 @@
             isDownloading = true;
             downloadBuffer = '';
             currentDownloadIndex = 0;
+            
+            // Store only the selected sessions for downloading
+            availableSessions = selectedSessions;
+            console.log('Starting download of selected sessions:', availableSessions);
+            
             startDownloadingSession(selectedSessions);
         }
 
