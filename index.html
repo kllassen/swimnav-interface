@@ -594,73 +594,34 @@
 
                 else if (data[0] === 0xFB) {  // Session count packet
                     const sessionCount = data[1];
-                    console.log('FB PACKET RECEIVED:', {
-                        rawData: Array.from(data).map(b => b.toString(16)),
-                        sessionCount: sessionCount,
-                        packetLength: data.length
-                    });
                     availableSessions = [];
                     expectedSessions = sessionCount;
                     receivedSessions = 0;
-                    updateDownloadStatus(`Found ${sessionCount} sessions`);
-                    
-                    console.log('Session tracking initialized:', {
-                        expectedSessions,
-                        receivedSessions,
-                        availableSessionsLength: availableSessions.length
-                    });
-                
-                    // If no sessions, show empty list
-                    if (sessionCount === 0) {
-                        console.log('No sessions available');
-                        showSessionsList([]);
-                        return;
-                    } else {
-                        console.log(`Waiting for ${sessionCount} session details...`);
-                    }
-                }
-                    
-                else if (data[0] === 0xF9) {  // Session info packet (filename)
-                    console.log('Raw filename data:', Array.from(data));
-                
+                    console.log(`Detected ${sessionCount} available sessions`);
+                } 
+                else if (data[0] === 0xF9) {  // Filename packet
                     const decoder = new TextDecoder();
-                    const filename = decoder.decode(data.slice(2, data.length-2)).replace(/\0/g, '').trim();
-                    
-                    console.log('Processed filename:', filename);
-                    
+                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
                     if (filename.length > 0) {
                         currentSessionInfo = { filename: filename, size: 0, records: 0 };
-                        console.log('Stored filename info:', currentSessionInfo);
-                    } else {
-                        console.error('Filename is empty, ignoring this packet.');
                     }
-                }
-  
-                else if (data[0] === 0xF8) {  // File info packet (size and records)
-                    if (!currentSessionInfo) {
-                        console.error('Received file info before filename, ignoring packet.');
-                        return;
-                    }
-                
-                    console.log('Processing F8 packet:', Array.from(data).map(b => b.toString(16)));
+                } 
+                else if (data[0] === 0xF8) {  // File info packet
+                    if (!currentSessionInfo) return;
                     
-                    // Extract size and records from the packet - using new offsets
-                    const size = data[3] + (data[4] << 8) + (data[5] << 16) + (data[6] << 24);
-                    const records = data[7] + (data[8] << 8);
+                    const size = data[2] + (data[3] << 8) + (data[4] << 16) + (data[5] << 24);
+                    const records = data[6] + (data[7] << 8);
                     
-                    console.log('Parsed file info:', { filename: currentSessionInfo.filename, size, records });
-                
                     currentSessionInfo.size = size;
                     currentSessionInfo.records = records;
-                
                     availableSessions.push({ ...currentSessionInfo });
-                    console.log('Added to availableSessions:', currentSessionInfo);
                     
                     currentSessionInfo = null;
                     receivedSessions++;
-                
+                    
                     if (receivedSessions === expectedSessions) {
-                        console.log('All sessions received, showing dialog...');
+                        document.getElementById('sessionOverlay').style.display = 'block';
+                        document.getElementById('sessionDialog').style.display = 'block';
                         showSessionsList(availableSessions);
                     }
                 }
