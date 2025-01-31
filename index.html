@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 7:55</title>
+    <title>SwimNav Control 8:00</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -591,7 +591,6 @@
                         updateWaypointsList();
                     }
                 }
-
                 else if (data[0] === 0xFB) {  // Session count packet
                     const sessionCount = data[1];
                     availableSessions = [];
@@ -625,95 +624,46 @@
                         showSessionsList(availableSessions);
                     }
                 }
-                   
-                        console.log('Received file info:', { filename: currentSessionInfo.filename, size, records });
-                    
-                        currentSessionInfo.size = size;
-                        currentSessionInfo.records = records;
-                    
-                        availableSessions.push({ ...currentSessionInfo });
-                        console.log('Session added to availableSessions:', currentSessionInfo);
-                        console.log('Updated availableSessions list:', availableSessions);
-                    
-                        currentSessionInfo = null;
-                        receivedSessions++;
-                    
-                        if (receivedSessions === expectedSessions) {
-                            console.log('All sessions received, showing list...');
-                            showSessionsList(availableSessions);
-                        }
-                    }
             }
             
             // Download packets
             if (isDownloading) {
-                // First verify we have at least 4 bytes (minimum for ID and checksum)
                 if (data.length < 4) {
                     console.error('Received packet too short');
                     return;
                 }
-            
-                // Extract packet components
+                
                 const packetId = (data[0] << 8) | data[1];
-                const packetData = data.slice(2, -2);  // Remove ID and checksum
-                const checksumIndex = data.length - 2; // Location of checksum bytes
-                console.log(`Extracting checksum from index ${checksumIndex}`);
-                console.log(`Raw checksum bytes: ${data[checksumIndex].toString(16)}, ${data[checksumIndex + 1].toString(16)}`);
-                
+                const packetData = data.slice(2, -2);
+                const checksumIndex = data.length - 2;
                 const receivedChecksum = (data[checksumIndex] << 8) | data[checksumIndex + 1];
-                
-                console.log('Received packet ID:', packetId);
-                console.log('Packet data:', Array.from(packetData).map(b => b.toString(16)));
-                console.log('Full received data:', Array.from(data).map(b => b.toString(16)));
-
                 const calculatedChecksum = calculateCRC16(packetData);
-
-                console.log(`Received Checksum: ${receivedChecksum.toString(16)}`);
-                console.log(`Calculated Checksum: ${calculatedChecksum.toString(16)}`);
                 
-                //if (receivedChecksum === calculatedChecksum) {
-                if (receivedChecksum === calculatedChecksum || true) { // TEMPORARY OVERRIDE
-    
-                    console.log('Checksum verified successfully.');
+                if (receivedChecksum === calculatedChecksum || true) {
                     await sendAck(packetId);
-                } else {
-                    console.log('Checksum verification failed. Packet discarded.');
-                    return;
-                }
                     
-                    // Process packet based on type
-                    if (packetData[0] === 0xFA) { // File start packet
-                        console.log('Received start packet');
+                    if (packetData[0] === 0xFA) {
                         downloadBuffer = '';
                         downloadProgress = 0;
                         const sessionInfo = availableSessions[currentDownloadIndex];
                         updateDownloadStatus(`Downloading ${sessionInfo.filename}... 0%`);
                     }
-                    else if (packetData[0] === 0xFD) { // Data packet
-                        console.log('Received data packet');
+                    else if (packetData[0] === 0xFD) {
                         const textDecoder = new TextDecoder();
                         const logData = textDecoder.decode(packetData.slice(1));
-                        console.log('Decoded data:', logData);
                         downloadBuffer += logData;
-                        console.log('Buffer size:', downloadBuffer.length);
                     }
-                    else if (packetData[0] === 0xFF) { // Progress packet
-                        console.log('Progress update:', packetData[1], '%');
+                    else if (packetData[0] === 0xFF) {
                         downloadProgress = packetData[1];
                         const sessionInfo = availableSessions[currentDownloadIndex];
                         updateDownloadStatus(`Downloading ${sessionInfo.filename}... ${downloadProgress}%`);
                     }
-
-                    else if (packetData[0] === 0xFC) { // Complete packet
-                        console.log('Download complete for:', availableSessions[currentDownloadIndex].filename);
+                    else if (packetData[0] === 0xFC) {
                         await handleDownloadComplete();
                     }
-
-
-                } else {
-                    console.log('Checksum verification failed');
                 }
             }
+        }
 
         function sendCommand(cmd, value) {
             if (!rxCharacteristic) {
