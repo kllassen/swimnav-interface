@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 9:25</title>
+    <title>SwimNav Control 12:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -597,7 +597,11 @@
                     expectedSessions = sessionCount;
                     receivedSessions = 0;
                     console.log(`Detected ${sessionCount} available sessions`);
-                } 
+                    
+                    if (sessionCount === 0) {
+                        updateDownloadStatus('No log files found on device');
+                    }
+                }
                 else if (data[0] === 0xF9) {  // Filename packet
                     const decoder = new TextDecoder();
                     const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
