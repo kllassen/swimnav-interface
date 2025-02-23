@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 11:15</title>
+    <title>SwimNav Control 11:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -601,6 +601,22 @@
                 
                     if (fileCount === 0) {
                         updateDownloadStatus('No log files found on device');
+                    }
+                } 
+                else if (data[0] >= 0x30 && data[0] <= 0x39) {  // If first byte is ASCII (likely filename)
+                    const decoder = new TextDecoder();
+                    const fileInfo = decoder.decode(data);
+                    console.log(`Received file info: ${fileInfo}`);
+                
+                    const parts = fileInfo.split(',');
+                    if (parts.length === 2) {
+                        availableSessions.push({ filename: parts[0], size: parseInt(parts[1]) });
+                        receivedSessions++;
+                    }
+                
+                    if (receivedSessions >= expectedSessions) {
+                        console.log("All file names received:", availableSessions);
+                        showSessionsList(availableSessions);  // Update UI with files
                     }
                 }
 
