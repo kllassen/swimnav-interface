@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:16</title>
+    <title>SwimNav Control 12:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -381,20 +381,6 @@
     </div>
 
     <script>
-        // Command definitions
-        const COMMANDS = {
-            FILE_LIST: 10,    // Command to list files
-            FILE_READ: 9      // Command to read file
-        };
-
-        // Packet type definitions
-        const PACKET_TYPES = {
-            START: 0xFA,      // Start of file transfer
-            DATA: 0xFD,       // File data chunk
-            END: 0xFC,        // End of file transfer
-            PROGRESS: 0xFF,   // Progress update
-            ACK: 0xAA        // Acknowledgment
-        };
         let bleDevice = null;
         let txCharacteristic = null;
         let rxCharacteristic = null;
@@ -661,58 +647,6 @@
                     console.error('Received packet too short');
                     return;
                 }
-            
-                console.log('Raw packet:', Array.from(data).map(b => b.toString(16)));
-                
-                // Extract components
-                const packetId = (data[0] << 8) | data[1];
-                const packetType = data[2];
-                const packetContent = data.slice(3, -2);
-                const checksumReceived = (data[data.length - 2] << 8) | data[data.length - 1];
-                
-                console.log('Processing packet:', {
-                    id: packetId,
-                    type: `0x${packetType.toString(16)}`,
-                    contentLength: packetContent.length
-                });
-            
-                // Send ACK for all packets
-                await sendAck(packetId);
-            
-                // Process by type
-                switch (packetType) {
-                    case PACKET_TYPES.START: // Start packet
-                        downloadBuffer = '';
-                        downloadProgress = 0;
-                        console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
-                        break;
-            
-                    case PACKET_TYPES.DATA: // Data packet
-                        try {
-                            const textDecoder = new TextDecoder();
-                            const logData = textDecoder.decode(packetContent);
-                            downloadBuffer += logData;
-                            console.log('Added data chunk, buffer size:', downloadBuffer.length);
-                        } catch (e) {
-                            console.error('Error decoding data packet:', e);
-                        }
-                        break;
-            
-                    case PACKET_TYPES.PROGRESS: // Progress packet
-                        downloadProgress = packetContent[0];
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
-                        break;
-            
-                    case PACKET_TYPES.END: // Complete packet
-                        console.log('Download complete, saving file...');
-                        await handleDownloadComplete();
-                        break;
-            
-                    default:
-                        console.log('Unknown packet type:', packetType);
-                }
-            }
         
                 console.log('Raw packet:', Array.from(data).map(b => b.toString(16)));
                 
@@ -929,22 +863,13 @@
                 return;
             }
             
-            try {
-                isDownloading = false;  // Changed to false until actual download starts
-                downloadBuffer = '';
-                availableSessions = [];  // Reset the sessions array
-                updateDownloadStatus('Reading available sessions...');
-                
-                console.log('Requesting session list from device...');
-                await sendCommand(COMMANDS.FILE_LIST, 0);
-                
-                // Log the command being sent for debugging
-                console.log('Sent FILE_LIST command:', COMMANDS.FILE_LIST);
-                
-            } catch (error) {
-                console.error('Error initiating download:', error);
-                updateDownloadStatus('Error: Failed to request file list');
-            }
+            isDownloading = false;  // Changed to false until actual download starts
+            downloadBuffer = '';
+            availableSessions = [];  // Reset the sessions array
+            updateDownloadStatus('Reading available sessions...');
+            
+            console.log('Requesting session list from device...');
+            await sendCommand(10, 0);
         }
 
         async function startDownloadingSession(sessions) {
