@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:25</title>
+    <title>SwimNav Control 8:31</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -592,6 +592,45 @@
                     if (expectedWaypoints === 0) {
                         document.getElementById('loading-message').style.display = 'none';
                         updateWaypointsList();
+                    }
+                }
+                else if (data[0] === 0xFB) {  // Session count packet
+                    const sessionCount = data[1];
+                    availableSessions = [];
+                    expectedSessions = sessionCount;
+                    receivedSessions = 0;
+                    console.log(`Detected ${sessionCount} available sessions`);
+                    
+                    if (sessionCount === 0) {
+                        updateDownloadStatus('No log files found on device');
+                    }
+                }
+                else if (data[0] === 0xF9) {  // Filename packet
+                    const decoder = new TextDecoder();
+                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
+                    if (filename.length > 0) {
+                        currentSessionInfo = { filename: filename, size: 0, records: 0 };
+                    }
+                }
+                else if (data[0] === 0xF8) {  // File info packet
+                    if (!currentSessionInfo) return;
+                    
+                    const view = new DataView(data.buffer);
+                    const size = (view.getUint8(5) << 24) | (view.getUint8(4) << 16) | 
+                                (view.getUint8(3) << 8) | view.getUint8(2);
+                    const records = view.getUint16(6, true);
+                    
+                    currentSessionInfo.size = size;
+                    currentSessionInfo.records = records;
+                    availableSessions.push({ ...currentSessionInfo });
+                    
+                    currentSessionInfo = null;
+                    receivedSessions++;
+                    
+                    if (receivedSessions === expectedSessions) {
+                        document.getElementById('sessionOverlay').style.display = 'block';
+                        document.getElementById('sessionDialog').style.display = 'block';
+                        showSessionsList(availableSessions);
                     }
                 }
                 else if (data[0] === 0xFE && data.length === 9) {
