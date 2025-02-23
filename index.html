@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 10:45</title>
+    <title>SwimNav Control 10:55</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -381,20 +381,6 @@
     </div>
 
     <script>
-        // Command definitions for file operations
-        const COMMANDS = {
-            FILE_LIST: 10,    // Command to list files
-            FILE_READ: 9      // Command to read file
-        };
-        
-        // Packet type definitions for file transfer
-        const PACKET_TYPES = {
-            START: 0x01,      // Start of file transfer
-            DATA: 0x02,       // File data chunk
-            END: 0x03,        // End of file transfer
-            ACK: 0x04         // Acknowledgment
-        };
-        
         let bleDevice = null;
         let txCharacteristic = null;
         let rxCharacteristic = null;
@@ -593,103 +579,6 @@
                         updateWaypointsList();
                     }
                 }
-                // Inside handleData function
-                else if (data[0] === COMMANDS.FILE_LIST) {  // File list count packet
-                    const sessionCount = data[1];
-                    availableSessions = [];
-                    expectedSessions = sessionCount;
-                    receivedSessions = 0;
-                    console.log(`Detected ${sessionCount} available sessions`);
-                    
-                    if (sessionCount === 0) {
-                        console.log('No sessions available');
-                        updateDownloadStatus('No log files found');
-                        document.getElementById('sessionOverlay').style.display = 'block';
-                        document.getElementById('sessionDialog').style.display = 'block';
-                        showSessionsList([]);
-                    }
-                }
-                else if (expectedSessions > 0 && data[0] !== COMMANDS.FILE_LIST) {  // File info packet
-                    const decoder = new TextDecoder();
-                    const fileInfo = decoder.decode(data);
-                    console.log('Received file info:', fileInfo);  // Debug log
-                    
-                    if (fileInfo.includes(',')) {  // Verify it's a valid file info packet
-                        const [filename, size] = fileInfo.split(',');
-                        console.log('Parsed file info:', {filename, size});  // Debug log
-                        
-                        availableSessions.push({
-                            filename: filename.trim(),
-                            size: parseInt(size),
-                            records: 0
-                        });
-                        
-                        receivedSessions++;
-                        
-                        if (receivedSessions >= expectedSessions) {
-                            console.log('All sessions received:', availableSessions);  // Debug log
-                            document.getElementById('sessionOverlay').style.display = 'block';
-                            document.getElementById('sessionDialog').style.display = 'block';
-                            showSessionsList(availableSessions);
-                        }
-                    }
-                }
-                        
-                        console.log('File info received:', filename, size, records);
-                        
-                        availableSessions.push({
-                            filename: filename,
-                            size: parseInt(size),
-                            records: parseInt(records || '0')  // Parse records if present
-                        });
-                    
-                    receivedSessions++;
-                    
-                    if (receivedSessions === expectedSessions) {
-                        document.getElementById('sessionOverlay').style.display = 'block';
-                        document.getElementById('sessionDialog').style.display = 'block';
-                        showSessionsList(availableSessions);
-                    }
-                }
-                else if (data[0] === 0xFB) {  // Session count packet
-                    const sessionCount = data[1];
-                    availableSessions = [];
-                    expectedSessions = sessionCount;
-                    receivedSessions = 0;
-                    console.log(`Detected ${sessionCount} available sessions`);
-                    
-                    if (sessionCount === 0) {
-                        updateDownloadStatus('No log files found on device');
-                    }
-                }
-                else if (data[0] === 0xF9) {  // Filename packet
-                    const decoder = new TextDecoder();
-                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
-                    if (filename.length > 0) {
-                        currentSessionInfo = { filename: filename, size: 0, records: 0 };
-                    }
-                }
-                else if (data[0] === 0xF8) {  // File info packet
-                    if (!currentSessionInfo) return;
-                    
-                    const view = new DataView(data.buffer);
-                    const size = (view.getUint8(5) << 24) | (view.getUint8(4) << 16) | 
-                                (view.getUint8(3) << 8) | view.getUint8(2);
-                    const records = view.getUint16(6, true);
-                    
-                    currentSessionInfo.size = size;
-                    currentSessionInfo.records = records;
-                    availableSessions.push({ ...currentSessionInfo });
-                    
-                    currentSessionInfo = null;
-                    receivedSessions++;
-                    
-                    if (receivedSessions === expectedSessions) {
-                        document.getElementById('sessionOverlay').style.display = 'block';
-                        document.getElementById('sessionDialog').style.display = 'block';
-                        showSessionsList(availableSessions);
-                    }
-                }
                 else if (data[0] === 0xFE && data.length === 9) {
                     const view = new DataView(data.buffer);
                     const lat = view.getFloat32(1, true);
@@ -758,7 +647,7 @@
                     console.error('Received packet too short');
                     return;
                 }
-            
+        
                 console.log('Raw packet:', Array.from(data).map(b => b.toString(16)));
                 
                 // Extract components
@@ -772,34 +661,40 @@
                     type: `0x${packetType.toString(16)}`,
                     contentLength: packetContent.length
                 });
-            
+        
                 // Send ACK for all packets
                 await sendAck(packetId);
-            
+        
                 // Process by type
                 switch (packetType) {
-                    case PACKET_TYPES.START: // 0x01 Start packet
+                    case 0xFA: // Start packet
                         downloadBuffer = '';
-                        console.log('Starting file transfer');
-                        updateDownloadStatus(`Starting download...`);
+                        downloadProgress = 0;
+                        console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
                         break;
-            
-                    case PACKET_TYPES.DATA: // 0x02 Data packet
+        
+                    case 0xFD: // Data packet
                         try {
                             const textDecoder = new TextDecoder();
                             const logData = textDecoder.decode(packetContent);
                             downloadBuffer += logData;
-                            console.log('Received data chunk, size:', packetContent.length);
+                            console.log('Added data chunk, buffer size:', downloadBuffer.length);
                         } catch (e) {
                             console.error('Error decoding data packet:', e);
                         }
                         break;
-            
-                    case PACKET_TYPES.END: // 0x03 End packet
-                        console.log('File transfer complete');
+        
+                    case 0xFF: // Progress packet
+                        downloadProgress = packetContent[0];
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
+                        break;
+        
+                    case 0xFC: // Complete packet
+                        console.log('Download complete, saving file...');
                         await handleDownloadComplete();
                         break;
-            
+        
                     default:
                         console.log('Unknown packet type:', packetType);
                 }
@@ -968,15 +863,13 @@
                 return;
             }
             
-            isDownloading = false;
+            isDownloading = false;  // Changed to false until actual download starts
             downloadBuffer = '';
-            availableSessions = [];
-            expectedSessions = 0;    // Reset expected count
-            receivedSessions = 0;    // Reset received count
+            availableSessions = [];  // Reset the sessions array
             updateDownloadStatus('Reading available sessions...');
             
             console.log('Requesting session list from device...');
-            await sendCommand(COMMANDS.FILE_LIST, 0);  // Use constant
+            await sendCommand(10, 0);
         }
 
         async function startDownloadingSession(sessions) {
@@ -1264,26 +1157,20 @@
             if (!session) return;
         
             try {
-                // Construct full filename with leading slash
-                const filename = '/' + session.filename;
-                console.log('Requesting download for:', filename);
-                updateDownloadStatus(`Starting download of ${filename}`);
+                console.log('Requesting download for:', session.filename);
+                updateDownloadStatus(`Downloading ${session.filename}...`);
         
-                // Send initial file read command with filename
-                const cmdData = new Uint8Array(filename.length + 1);
-                cmdData[0] = COMMANDS.FILE_READ;
-                cmdData.set(new TextEncoder().encode(filename), 1);
-                
-                await rxCharacteristic.writeValue(cmdData);
-                console.log('Sent file read command for:', filename);
+                const encoder = new TextEncoder();
+                const filenameBytes = encoder.encode(session.filename);
+                const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+                cmdBuffer[0] = 9; // Command 9 - Start download
+                cmdBuffer.set(filenameBytes, 1);
         
-                // Reset download state
-                isDownloading = true;
-                downloadBuffer = '';
-        
+                await rxCharacteristic.writeValue(cmdBuffer);
+                console.log('Download request sent for:', session.filename);
             } catch (error) {
-                console.error('Download request failed:', error);
-                updateDownloadStatus('Failed to start download: ' + error.message);
+                console.error('Failed to send request:', error);
+                updateDownloadStatus('Download failed: ' + error.message);
                 isDownloading = false;
             }
         }
