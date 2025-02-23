@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 9:03</title>
+    <title>SwimNav Control 9:07</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1242,6 +1242,10 @@
             try {
                 console.log('Requesting download for:', session.filename);
                 updateDownloadStatus(`Downloading ${session.filename}...`);
+        
+                // Set the download flag before sending request
+                isDownloading = true;
+                downloadBuffer = '';
         
                 const encoder = new TextEncoder();
                 const filenameBytes = encoder.encode(session.filename);
