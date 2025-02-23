@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 12:25</title>
+    <title>SwimNav Control 8:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -381,6 +381,21 @@
     </div>
 
     <script>
+        // Command definitions for file operations
+        const COMMANDS = {
+            FILE_LIST: 10,    // Command to list files
+            FILE_READ: 9      // Command to read file
+        };
+
+        // Packet type definitions for file transfer
+        const PACKET_TYPES = {
+            START: 0xFA,      // Start of file transfer
+            DATA: 0xFD,       // File data chunk
+            END: 0xFC,        // End of file transfer
+            PROGRESS: 0xFF,   // Progress update
+            ACK: 0xAA        // Acknowledgment
+        };
+        
         let bleDevice = null;
         let txCharacteristic = null;
         let rxCharacteristic = null;
