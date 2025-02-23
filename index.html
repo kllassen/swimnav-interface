@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:31</title>
+    <title>SwimNav Control 8:51</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -592,6 +592,35 @@
                     if (expectedWaypoints === 0) {
                         document.getElementById('loading-message').style.display = 'none';
                         updateWaypointsList();
+                    }
+                }
+                else if (data[0] === 10) {  // File list count packet
+                    const sessionCount = data[1];
+                    availableSessions = [];
+                    expectedSessions = sessionCount;
+                    receivedSessions = 0;
+                    console.log(`Detected ${sessionCount} available sessions`);
+                }
+                else if (data.length > 1 && expectedSessions > 0) {  // File info packet
+                    // Convert the data to a string
+                    const decoder = new TextDecoder();
+                    const fileInfo = decoder.decode(data);
+                    const [filename, size] = fileInfo.split(',');
+                    
+                    console.log('File info received:', filename, size);
+                    
+                    availableSessions.push({
+                        filename: filename,
+                        size: parseInt(size),
+                        records: 0  // We don't have record count in this format
+                    });
+                    
+                    receivedSessions++;
+                    
+                    if (receivedSessions === expectedSessions) {
+                        document.getElementById('sessionOverlay').style.display = 'block';
+                        document.getElementById('sessionDialog').style.display = 'block';
+                        showSessionsList(availableSessions);
                     }
                 }
                 else if (data[0] === 0xFB) {  // Session count packet
