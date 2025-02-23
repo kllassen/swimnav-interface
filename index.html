@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 9:30</title>
+    <title>SwimNav Control 9:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1240,22 +1240,18 @@
             if (!session) return;
         
             try {
-                // Verify filename format (MMDDHHMM.csv)
-                if (!session.filename.match(/^\d{8}\.csv$/)) {
-                    throw new Error('Invalid filename format');
-                }
-        
-                const filename = '/' + session.filename;  // Add leading slash
-                console.log('Requesting download for:', filename);
-                updateDownloadStatus(`Starting download of ${filename}`);
+                // Extract just the 8-character timestamp from filename
+                const timestamp = session.filename.substring(0, 8);
+                console.log('Requesting download for timestamp:', timestamp);
+                updateDownloadStatus(`Starting download of ${timestamp}`);
         
                 isDownloading = true;
                 downloadBuffer = '';
         
-                // Send simple command with filename
-                const data = new Uint8Array(filename.length + 1);
+                // Send command (9) + 8-character timestamp
+                const data = new Uint8Array(9); // 1 byte command + 8 bytes filename
                 data[0] = 9;  // Command 9 for file read
-                data.set(new TextEncoder().encode(filename), 1);
+                data.set(new TextEncoder().encode(timestamp), 1);
                 
                 await rxCharacteristic.writeValue(data);
                 console.log('Sent download request:', Array.from(data));
