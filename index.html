@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 10:55</title>
+    <title>SwimNav Control 11:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -591,17 +591,19 @@
                         updateWaypointsList();
                     }
                 }
-                else if (data[0] === 0xFB) {  // Session count packet
-                    const sessionCount = data[1];
+                
+                if (data[0] === 10) {  // CMD_FILE_LIST response
+                    const fileCount = data[1];
                     availableSessions = [];
-                    expectedSessions = sessionCount;
+                    expectedSessions = fileCount;
                     receivedSessions = 0;
-                    console.log(`Detected ${sessionCount} available sessions`);
-                    
-                    if (sessionCount === 0) {
+                    console.log(`Detected ${fileCount} available log files`);
+                
+                    if (fileCount === 0) {
                         updateDownloadStatus('No log files found on device');
                     }
                 }
+
                 else if (data[0] === 0xF9) {  // Filename packet
                     const decoder = new TextDecoder();
                     const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
