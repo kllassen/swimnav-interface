@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 8:51</title>
+    <title>SwimNav Control 9:03</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -602,18 +602,18 @@
                     console.log(`Detected ${sessionCount} available sessions`);
                 }
                 else if (data.length > 1 && expectedSessions > 0) {  // File info packet
-                    // Convert the data to a string
-                    const decoder = new TextDecoder();
-                    const fileInfo = decoder.decode(data);
-                    const [filename, size] = fileInfo.split(',');
-                    
-                    console.log('File info received:', filename, size);
-                    
-                    availableSessions.push({
-                        filename: filename,
-                        size: parseInt(size),
-                        records: 0  // We don't have record count in this format
-                    });
+                        // Convert the data to a string
+                        const decoder = new TextDecoder();
+                        const fileInfo = decoder.decode(data);
+                        const [filename, size, records] = fileInfo.split(',');
+                        
+                        console.log('File info received:', filename, size, records);
+                        
+                        availableSessions.push({
+                            filename: filename,
+                            size: parseInt(size),
+                            records: parseInt(records || '0')  // Parse records if present
+                        });
                     
                     receivedSessions++;
                     
