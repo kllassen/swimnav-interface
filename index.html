@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 9:40</title>
+    <title>SwimNav Control 10:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -386,14 +386,13 @@
             FILE_LIST: 10,    // Command to list files
             FILE_READ: 9      // Command to read file
         };
-
+        
         // Packet type definitions for file transfer
         const PACKET_TYPES = {
-            START: 0xFA,      // Start of file transfer
-            DATA: 0xFD,       // File data chunk
-            END: 0xFC,        // End of file transfer
-            PROGRESS: 0xFF,   // Progress update
-            ACK: 0xAA        // Acknowledgment
+            START: 0x01,      // Start of file transfer
+            DATA: 0x02,       // File data chunk
+            END: 0x03,        // End of file transfer
+            ACK: 0x04         // Acknowledgment
         };
         
         let bleDevice = null;
@@ -594,7 +593,7 @@
                         updateWaypointsList();
                     }
                 }
-                else if (data[0] === 10) {  // File list count packet
+                else if (data[0] === COMMANDS.FILE_LIST) {  // File list count packet
                     const sessionCount = data[1];
                     availableSessions = [];
                     expectedSessions = sessionCount;
@@ -602,10 +601,16 @@
                     console.log(`Detected ${sessionCount} available sessions`);
                 }
                 else if (data.length > 1 && expectedSessions > 0) {  // File info packet
-                        // Convert the data to a string
-                        const decoder = new TextDecoder();
-                        const fileInfo = decoder.decode(data);
-                        const [filename, size, records] = fileInfo.split(',');
+                    // Convert the data to a string
+                    const decoder = new TextDecoder();
+                    const fileInfo = decoder.decode(data);
+                    const [filename, size] = fileInfo.split(',');
+                    
+                    availableSessions.push({
+                        filename: filename,
+                        size: parseInt(size),
+                        records: 0  // We don't get record count in the protocol
+                    });
                         
                         console.log('File info received:', filename, size, records);
                         
@@ -730,7 +735,7 @@
                     console.error('Received packet too short');
                     return;
                 }
-        
+            
                 console.log('Raw packet:', Array.from(data).map(b => b.toString(16)));
                 
                 // Extract components
@@ -744,40 +749,34 @@
                     type: `0x${packetType.toString(16)}`,
                     contentLength: packetContent.length
                 });
-        
+            
                 // Send ACK for all packets
                 await sendAck(packetId);
-        
+            
                 // Process by type
                 switch (packetType) {
-                    case 0xFA: // Start packet
+                    case PACKET_TYPES.START: // 0x01 Start packet
                         downloadBuffer = '';
-                        downloadProgress = 0;
-                        console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
+                        console.log('Starting file transfer');
+                        updateDownloadStatus(`Starting download...`);
                         break;
-        
-                    case 0xFD: // Data packet
+            
+                    case PACKET_TYPES.DATA: // 0x02 Data packet
                         try {
                             const textDecoder = new TextDecoder();
                             const logData = textDecoder.decode(packetContent);
                             downloadBuffer += logData;
-                            console.log('Added data chunk, buffer size:', downloadBuffer.length);
+                            console.log('Received data chunk, size:', packetContent.length);
                         } catch (e) {
                             console.error('Error decoding data packet:', e);
                         }
                         break;
-        
-                    case 0xFF: // Progress packet
-                        downloadProgress = packetContent[0];
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
-                        break;
-        
-                    case 0xFC: // Complete packet
-                        console.log('Download complete, saving file...');
+            
+                    case PACKET_TYPES.END: // 0x03 End packet
+                        console.log('File transfer complete');
                         await handleDownloadComplete();
                         break;
-        
+            
                     default:
                         console.log('Unknown packet type:', packetType);
                 }
@@ -1240,21 +1239,22 @@
             if (!session) return;
         
             try {
-                // Extract just the 8-character timestamp from filename
-                const timestamp = session.filename.substring(0, 8);
-                console.log('Requesting download for timestamp:', timestamp);
-                updateDownloadStatus(`Starting download of ${timestamp}`);
+                // Construct full filename with leading slash
+                const filename = '/' + session.filename;
+                console.log('Requesting download for:', filename);
+                updateDownloadStatus(`Starting download of ${filename}`);
         
+                // Send initial file read command with filename
+                const cmdData = new Uint8Array(filename.length + 1);
+                cmdData[0] = COMMANDS.FILE_READ;
+                cmdData.set(new TextEncoder().encode(filename), 1);
+                
+                await rxCharacteristic.writeValue(cmdData);
+                console.log('Sent file read command for:', filename);
+        
+                // Reset download state
                 isDownloading = true;
                 downloadBuffer = '';
-        
-                // Send command (9) + 8-character timestamp
-                const data = new Uint8Array(9); // 1 byte command + 8 bytes filename
-                data[0] = 9;  // Command 9 for file read
-                data.set(new TextEncoder().encode(timestamp), 1);
-                
-                await rxCharacteristic.writeValue(data);
-                console.log('Sent download request:', Array.from(data));
         
             } catch (error) {
                 console.error('Download request failed:', error);
