@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 11:59</title>
+    <title>SwimNav Control 02/23/25 7:10</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1178,12 +1178,23 @@
                 console.log('Requesting download for:', session.filename);
                 updateDownloadStatus(`Downloading ${session.filename}...`);
         
+                // Ensure BLE connection is active before sending the request
+                if (!rxCharacteristic) {
+                    console.error("BLE not connected! Cannot send download request.");
+                    updateDownloadStatus("Download failed: BLE not connected.");
+                    isDownloading = false;
+                    return;
+                }
+        
+                console.log("BLE Connection Status: Ready to send download request.");
+        
                 const encoder = new TextEncoder();
                 const filenameBytes = encoder.encode(session.filename);
                 const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
                 cmdBuffer[0] = 9; // Command 9 - Start download
                 cmdBuffer.set(filenameBytes, 1);
         
+                // Attempt to send the request and catch any transmission errors
                 await rxCharacteristic.writeValue(cmdBuffer);
                 console.log('Download request sent for:', session.filename);
             } catch (error) {
