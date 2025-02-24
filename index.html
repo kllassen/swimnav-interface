@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/23/25 7:10</title>
+    <title>SwimNav Control 02/23 7:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -512,6 +512,16 @@
                 });
         
                 const server = await bleDevice.gatt.connect();
+                console.log("Connected to BLE server.");
+                
+                // Request a higher MTU
+                try {
+                    const mtu = await server.requestMtu(256);
+                    console.log(`Requested MTU size: ${mtu}`);
+                } catch (error) {
+                    console.error("MTU request failed:", error);
+                }
+                
                 const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
                 
                 rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
