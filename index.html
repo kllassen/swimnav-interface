@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/24 11:40</title>
+    <title>SwimNav Control 02/24 12:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1191,17 +1191,23 @@
                 // Reset download state
                 downloadBuffer = '';
                 downloadProgress = 0;
+                isDownloading = true;
                 
-                // Send the download request
-                const encoder = new TextEncoder();
-                const filenameBytes = encoder.encode(session.filename);
-                const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
+                // Create a simple command buffer (just command and first byte of filename)
+                const cmdBuffer = new Uint8Array(2);
                 cmdBuffer[0] = 9; // Command 9 - Start download
-                cmdBuffer.set(filenameBytes, 1);
-        
-                // Send the request
+                cmdBuffer[1] = session.filename.charCodeAt(0); // First character of filename
+                
+                console.log('Sending simplified download command for:', session.filename);
+                
+                // Send the command with a simple buffer
                 await rxCharacteristic.writeValue(cmdBuffer);
-                console.log('Download request sent for:', session.filename);
+                
+                // Then send the filename in a second write
+                const filenameBuffer = new TextEncoder().encode(session.filename);
+                await rxCharacteristic.writeValue(filenameBuffer);
+                
+                console.log('Download request completed for:', session.filename);
             } catch (error) {
                 console.error('Failed to send request:', error);
                 updateDownloadStatus('Download failed: ' + error.message);
