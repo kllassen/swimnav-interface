@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/24 12:59</title>
+    <title>SwimNav Control 02/24 1:11</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -565,174 +565,153 @@
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
             
-            // Regular packets when not downloading
-            if (!isDownloading) {
-                console.log('Received regular packet type:', data[0].toString(16));
-                console.log('Packet data:', Array.from(data).map(b => b.toString(16)));
-                
-                if (data[0] === 0xFF && data.length === 5) {
-                    document.getElementById('errorCone').value = data[1].toString();
-                    document.getElementById('waypointZone').value = data[2].toString();
-                    document.getElementById('hystCone').value = data[3].toString();
-                    document.getElementById('triggers').value = data[4].toString();
+            // Try to decode as text first (for better debugging)
+            let dataString = '';
+            try {
+                dataString = new TextDecoder().decode(data);
+                // Only log if it's printable text
+                if (/^[\x20-\x7E]+$/.test(dataString)) {
+                    console.log('Received text data:', dataString);
                 }
-                else if (data[0] === 0xFF && data.length === 2) {
-                    expectedWaypoints = data[1];
-                    receivedWaypoints = 0;
-                    waypoints = [];
-                    if (expectedWaypoints === 0) {
-                        document.getElementById('loading-message').style.display = 'none';
-                        updateWaypointsList();
-                    }
-                }
-                else if (data[0] === 0xFE && data.length === 9) {
-                    const view = new DataView(data.buffer);
-                    const lat = view.getFloat32(1, true);
-                    const lon = view.getFloat32(5, true);
-                    waypoints.push({ lat, lon });
-                    receivedWaypoints++;
-                    
-                    if (receivedWaypoints >= expectedWaypoints) {
-                        document.getElementById('loading-message').style.display = 'none';
-                        updateWaypointsList();
-                    }
-                }
-                
-                if (data[0] === 10) {  // CMD_FILE_LIST response
-                    const fileCount = data[1];
-                    availableSessions = [];
-                    expectedSessions = fileCount;
-                    receivedSessions = 0;
-                    console.log(`Detected ${fileCount} available log files`);
-                
-                    if (fileCount === 0) {
-                        updateDownloadStatus('No log files found on device');
-                    }
-                } 
-                else if (data[0] >= 0x30 && data[0] <= 0x39) {  // If first byte is ASCII (likely filename)
-                    const decoder = new TextDecoder();
-                    const fileInfo = decoder.decode(data);
-                    console.log(`Received file info: ${fileInfo}`);
-                
-                    const parts = fileInfo.split(',');
-                    if (parts.length === 2) {
-                        availableSessions.push({ filename: parts[0], size: parseInt(parts[1]) });
-                        receivedSessions++;
-                    }
-                
-                    if (receivedSessions >= expectedSessions) {
-                        console.log("All file names received:", availableSessions);
-                        showSessionsList(availableSessions);  // Update UI with files
-                    }
-                }
-        
-                else if (data[0] === 0xF9) {  // Filename packet
-                    const decoder = new TextDecoder();
-                    const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
-                    if (filename.length > 0) {
-                        currentSessionInfo = { filename: filename, size: 0, records: 0 };
-                    }
-                } 
-        
-                else if (data[0] === 0xF8) {  // File info packet
-                    if (!currentSessionInfo) return;
-                
-                    console.log('Raw file info packet data:', Array.from(data).map(b => b.toString(16)).join(' '));
-                
-                    const view = new DataView(data.buffer);
-                
-                    // File size correction: read bytes individually to ensure proper little-endian interpretation
-                    const size = (view.getUint8(5) << 24) | (view.getUint8(4) << 16) | (view.getUint8(3) << 8) | view.getUint8(2);
-                    
-                    // Read 16-bit little-endian record count from bytes 6-7
-                    const records = view.getUint16(6, true);
-                
-                    console.log(`Parsed file info: ${currentSessionInfo.filename}, Size: ${size} bytes, Records: ${records}`);
-                
-                    currentSessionInfo.size = size;
-                    currentSessionInfo.records = records;
-                    availableSessions.push({ ...currentSessionInfo });
-                
-                    currentSessionInfo = null;
-                    receivedSessions++;
-                
-                    if (receivedSessions === expectedSessions) {
-                        document.getElementById('sessionOverlay').style.display = 'block';
-                        document.getElementById('sessionDialog').style.display = 'block';
-                        showSessionsList(availableSessions);
-                    }
-                }
-                
-                // Check for binary file transfer start packets even when not in download mode
-                else if (data[0] === 0x01 || data[0] === 0xFA) { // PKT_TYPE_START or custom start marker
-                    console.log('Received START packet');
+            } catch (e) {
+                // Ignore decoding errors
+            }
+            
+            // Handle file download protocol
+            if (isDownloading || dataString.startsWith('START_FILE')) {
+                // Check for text markers
+                if (dataString === 'START_FILE') {
+                    console.log('Received START_FILE marker');
                     downloadBuffer = '';
                     downloadProgress = 0;
                     isDownloading = true;
                     updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
                 }
+                else if (dataString === 'END_FILE') {
+                    console.log('Received END_FILE marker, download complete');
+                    await handleDownloadComplete();
+                    isDownloading = false;
+                }
+                else if (dataString.startsWith('PROGRESS_')) {
+                    const progressPart = dataString.split('_')[1];
+                    if (progressPart && !isNaN(parseInt(progressPart))) {
+                        downloadProgress = parseInt(progressPart);
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
+                        console.log(`Download progress: ${downloadProgress}%`);
+                    }
+                }
+                else if (dataString.startsWith('CHUNK_')) {
+                    // This is just a chunk marker, we can ignore the marker itself
+                    console.log('Received chunk marker:', dataString);
+                }
+                else if (isDownloading) {
+                    // This is actual file data
+                    // Decode as text for CSV files
+                    try {
+                        const textDecoder = new TextDecoder();
+                        const logData = textDecoder.decode(data);
+                        downloadBuffer += logData;
+                        console.log(`Added data chunk of ${data.length} bytes, buffer size: ${downloadBuffer.length}`);
+                    } catch (e) {
+                        console.error('Error decoding data chunk:', e);
+                    }
+                }
+                
+                return; // Skip regular packet processing when in download mode
             }
             
-            // Download packets
-            if (isDownloading) {
-                console.log('Download packet received:', Array.from(data).map(b => b.toString(16)));
-                
-                // First try to handle as binary packet
-                const packetType = data[0];
-                
-                if (packetType === 0x01 || packetType === 0xFA) { // START packet (0x01 or 0xFA)
-                    console.log('Received START packet');
-                    downloadBuffer = '';
-                    downloadProgress = 0;
-                    updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
-                } 
-                else if (packetType === 0x03 || packetType === 0xFC) { // END packet (0x03 or 0xFC)
-                    console.log('Received END packet, download complete');
-                    await handleDownloadComplete();
+            // Regular packets when not downloading
+            console.log('Received regular packet type:', data[0].toString(16));
+            console.log('Packet data:', Array.from(data).map(b => b.toString(16)));
+            
+            if (data[0] === 0xFF && data.length === 5) {
+                document.getElementById('errorCone').value = data[1].toString();
+                document.getElementById('waypointZone').value = data[2].toString();
+                document.getElementById('hystCone').value = data[3].toString();
+                document.getElementById('triggers').value = data[4].toString();
+            }
+            else if (data[0] === 0xFF && data.length === 2) {
+                expectedWaypoints = data[1];
+                receivedWaypoints = 0;
+                waypoints = [];
+                if (expectedWaypoints === 0) {
+                    document.getElementById('loading-message').style.display = 'none';
+                    updateWaypointsList();
                 }
-                else if (packetType === 0xFF) { // Progress packet
-                    if (data.length > 1) {
-                        downloadProgress = data[1];
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
-                    }
-                }
-                else { // Data packet or unknown - assume it's data
-                    try {
-                        // Check if first byte might be a marker
-                        const content = (packetType === 0x02 || packetType === 0xFD) ? data.slice(1) : data;
-                        const textDecoder = new TextDecoder();
-                        const logData = textDecoder.decode(content);
-                        downloadBuffer += logData;
-                        console.log(`Added data chunk of ${content.length} bytes, buffer size: ${downloadBuffer.length}`);
-                    } catch (e) {
-                        console.error('Error decoding packet:', e);
-                    }
-                }
+            }
+            else if (data[0] === 0xFE && data.length === 9) {
+                const view = new DataView(data.buffer);
+                const lat = view.getFloat32(1, true);
+                const lon = view.getFloat32(5, true);
+                waypoints.push({ lat, lon });
+                receivedWaypoints++;
                 
-                // If binary handling fails, try text-based protocol as fallback
-                try {
-                    const dataString = new TextDecoder().decode(data);
-                    
-                    if (dataString.startsWith("PROGRESS:")) {
-                        const progress = parseInt(dataString.split(":")[1]);
-                        downloadProgress = progress;
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${progress}%`);
-                    }
-                    else if (dataString === "END") {
-                        console.log('Download complete, saving file...');
-                        await handleDownloadComplete();
-                    }
-                    else if (dataString.startsWith("START:")) {
-                        const parts = dataString.split(":");
-                        if (parts.length >= 3) {
-                            downloadBuffer = '';
-                            downloadProgress = 0;
-                            console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
-                            updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
-                        }
-                    }
-                } catch (e) {
-                    // Ignore errors in fallback text handling
+                if (receivedWaypoints >= expectedWaypoints) {
+                    document.getElementById('loading-message').style.display = 'none';
+                    updateWaypointsList();
+                }
+            }
+            
+            if (data[0] === 10) {  // CMD_FILE_LIST response
+                const fileCount = data[1];
+                availableSessions = [];
+                expectedSessions = fileCount;
+                receivedSessions = 0;
+                console.log(`Detected ${fileCount} available log files`);
+            
+                if (fileCount === 0) {
+                    updateDownloadStatus('No log files found on device');
+                }
+            } 
+            else if (data[0] >= 0x30 && data[0] <= 0x39) {  // If first byte is ASCII (likely filename)
+                const decoder = new TextDecoder();
+                const fileInfo = decoder.decode(data);
+                console.log(`Received file info: ${fileInfo}`);
+            
+                const parts = fileInfo.split(',');
+                if (parts.length === 2) {
+                    availableSessions.push({ filename: parts[0], size: parseInt(parts[1]) });
+                    receivedSessions++;
+                }
+            
+                if (receivedSessions >= expectedSessions) {
+                    console.log("All file names received:", availableSessions);
+                    showSessionsList(availableSessions);  // Update UI with files
+                }
+            }
+            else if (data[0] === 0xF9) {  // Filename packet
+                const decoder = new TextDecoder();
+                const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
+                if (filename.length > 0) {
+                    currentSessionInfo = { filename: filename, size: 0, records: 0 };
+                }
+            } 
+            else if (data[0] === 0xF8) {  // File info packet
+                if (!currentSessionInfo) return;
+            
+                console.log('Raw file info packet data:', Array.from(data).map(b => b.toString(16)).join(' '));
+            
+                const view = new DataView(data.buffer);
+            
+                // File size correction: read bytes individually to ensure proper little-endian interpretation
+                const size = (view.getUint8(5) << 24) | (view.getUint8(4) << 16) | (view.getUint8(3) << 8) | view.getUint8(2);
+                
+                // Read 16-bit little-endian record count from bytes 6-7
+                const records = view.getUint16(6, true);
+            
+                console.log(`Parsed file info: ${currentSessionInfo.filename}, Size: ${size} bytes, Records: ${records}`);
+            
+                currentSessionInfo.size = size;
+                currentSessionInfo.records = records;
+                availableSessions.push({ ...currentSessionInfo });
+            
+                currentSessionInfo = null;
+                receivedSessions++;
+            
+                if (receivedSessions === expectedSessions) {
+                    document.getElementById('sessionOverlay').style.display = 'block';
+                    document.getElementById('sessionDialog').style.display = 'block';
+                    showSessionsList(availableSessions);
                 }
             }
         }
