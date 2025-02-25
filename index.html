@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/23 7:40</title>
+    <title>SwimNav Control 02/24 11:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -671,60 +671,44 @@
             
             // Download packets
             if (isDownloading) {
-                if (data.length < 5) { // Minimum length: 2 (ID) + 1 (type) + 2 (checksum)
-                    console.error('Received packet too short');
-                    return;
-                }
-        
-                console.log('Raw packet:', Array.from(data).map(b => b.toString(16)));
-                
-                // Extract components
-                const packetId = (data[0] << 8) | data[1];
-                const packetType = data[2];
-                const packetContent = data.slice(3, -2);
-                const checksumReceived = (data[data.length - 2] << 8) | data[data.length - 1];
-                
-                console.log('Processing packet:', {
-                    id: packetId,
-                    type: `0x${packetType.toString(16)}`,
-                    contentLength: packetContent.length
-                });
-        
-                // Send ACK for all packets
-                await sendAck(packetId);
-        
-                // Process by type
-                switch (packetType) {
-                    case 0xFA: // Start packet
-                        downloadBuffer = '';
-                        downloadProgress = 0;
-                        console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
-                        break;
-        
-                    case 0xFD: // Data packet
-                        try {
-                            const textDecoder = new TextDecoder();
-                            const logData = textDecoder.decode(packetContent);
-                            downloadBuffer += logData;
-                            console.log('Added data chunk, buffer size:', downloadBuffer.length);
-                        } catch (e) {
-                            console.error('Error decoding data packet:', e);
-                        }
-                        break;
-        
-                    case 0xFF: // Progress packet
-                        downloadProgress = packetContent[0];
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
-                        break;
-        
-                    case 0xFC: // Complete packet
+                try {
+                    const dataString = new TextDecoder().decode(data);
+                    console.log('Received data:', dataString.substring(0, 50) + (dataString.length > 50 ? '...' : ''));
+                    
+                    if (dataString.startsWith("PROGRESS:")) {
+                        const progress = parseInt(dataString.split(":")[1]);
+                        downloadProgress = progress;
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${progress}%`);
+                    }
+                    else if (dataString === "END") {
                         console.log('Download complete, saving file...');
                         await handleDownloadComplete();
-                        break;
-        
-                    default:
-                        console.log('Unknown packet type:', packetType);
+                    }
+                    else if (!dataString.startsWith("START:") && !dataString.startsWith("PROGRESS:")) {
+                        // This is file data, append to buffer
+                        downloadBuffer += dataString;
+                        console.log('Added data chunk, buffer size:', downloadBuffer.length);
+                    }
+                } catch (e) {
+                    console.error('Error processing download data:', e);
+                }
+            } else {
+                // Not in download mode, check if this is a start command
+                try {
+                    const dataString = new TextDecoder().decode(data);
+                    if (dataString.startsWith("START:")) {
+                        const parts = dataString.split(":");
+                        if (parts.length >= 3) {
+                            downloadBuffer = '';
+                            downloadProgress = 0;
+                            isDownloading = true;
+                            console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
+                            updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
+                        }
+                    }
+                } catch (e) {
+                    // Not a text packet, handle other commands
+                    // ... existing command handling ...
                 }
             }
         }
@@ -966,32 +950,38 @@
             console.log('Download complete for session:', session);
             
             if (session && downloadBuffer) {
-                const lines = downloadBuffer.split('\n');
-                const headerLine = lines[0];
-                const dataLines = lines.slice(1);
-                
-                // Create metadata header
-                const metadata = [
-                    `# File: ${session.filename}`,
-                    `# Size: ${(session.size / 1024).toFixed(2)} KB`,
-                    `# Records: ${session.records}`,
-                    `# Downloaded: ${new Date().toISOString()}`,
-                    ''
-                ].join('\n');
-                
-                // Combine metadata with data
-                const processedData = metadata + headerLine + '\n' + dataLines.join('\n');
-                
-                // Save the file
-                const blob = new Blob([processedData], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = session.filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                try {
+                    // Add metadata as comments at the top of the file
+                    const metadata = [
+                        `# File: ${session.filename}`,
+                        `# Size: ${(session.size / 1024).toFixed(2)} KB`,
+                        `# Records: ${session.records}`,
+                        `# Downloaded: ${new Date().toISOString()}`,
+                        ''
+                    ].join('\n');
+                    
+                    // Combine metadata with the downloaded data
+                    const processedData = metadata + downloadBuffer;
+                    
+                    // Save the file
+                    const blob = new Blob([processedData], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = session.filename.startsWith('/') ? 
+                                session.filename.substring(1) : session.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    console.log(`File ${session.filename} saved successfully`);
+                } catch (error) {
+                    console.error('Error saving file:', error);
+                    updateDownloadStatus(`Error saving file: ${error.message}`);
+                }
+            } else {
+                console.warn('No data received or session information missing');
             }
             
             downloadBuffer = '';
@@ -1186,7 +1176,7 @@
         
             try {
                 console.log('Requesting download for:', session.filename);
-                updateDownloadStatus(`Downloading ${session.filename}...`);
+                updateDownloadStatus(`Preparing to download ${session.filename}...`);
         
                 // Ensure BLE connection is active before sending the request
                 if (!rxCharacteristic) {
@@ -1197,14 +1187,19 @@
                 }
         
                 console.log("BLE Connection Status: Ready to send download request.");
-        
+                
+                // Reset download state
+                downloadBuffer = '';
+                downloadProgress = 0;
+                
+                // Send the download request
                 const encoder = new TextEncoder();
                 const filenameBytes = encoder.encode(session.filename);
                 const cmdBuffer = new Uint8Array(filenameBytes.length + 1);
                 cmdBuffer[0] = 9; // Command 9 - Start download
                 cmdBuffer.set(filenameBytes, 1);
         
-                // Attempt to send the request and catch any transmission errors
+                // Send the request
                 await rxCharacteristic.writeValue(cmdBuffer);
                 console.log('Download request sent for:', session.filename);
             } catch (error) {
