@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/24 12:52</title>
+    <title>SwimNav Control 02/24 12:59</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -514,13 +514,9 @@
                 const server = await bleDevice.gatt.connect();
                 console.log("Connected to BLE server.");
                 
-                // Request a higher MTU
-                try {
-                    const mtu = await server.requestMtu(256);
-                    console.log(`Requested MTU size: ${mtu}`);
-                } catch (error) {
-                    console.error("MTU request failed:", error);
-                }
+                // Note: Web Bluetooth API doesn't support explicit MTU requests
+                // The ESP32 will negotiate MTU automatically during connection
+                console.log("Connected to GATT server - MTU negotiation handled by device");
                 
                 const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
                 
@@ -529,7 +525,7 @@
         
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-
+        
                 
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
                 document.getElementById('connectBtn').textContent = 'Disconnect';
