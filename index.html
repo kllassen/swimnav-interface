@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/24 12:35</title>
+    <title>SwimNav Control 02/24 12:52</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -629,7 +629,7 @@
                         showSessionsList(availableSessions);  // Update UI with files
                     }
                 }
-
+        
                 else if (data[0] === 0xF9) {  // Filename packet
                     const decoder = new TextDecoder();
                     const filename = decoder.decode(data.slice(1)).replace(/\0/g, '').trim();
@@ -637,7 +637,7 @@
                         currentSessionInfo = { filename: filename, size: 0, records: 0 };
                     }
                 } 
-
+        
                 else if (data[0] === 0xF8) {  // File info packet
                     if (!currentSessionInfo) return;
                 
@@ -666,14 +666,56 @@
                         showSessionsList(availableSessions);
                     }
                 }
-        
+                
+                // Check for binary file transfer start packets even when not in download mode
+                else if (data[0] === 0x01 || data[0] === 0xFA) { // PKT_TYPE_START or custom start marker
+                    console.log('Received START packet');
+                    downloadBuffer = '';
+                    downloadProgress = 0;
+                    isDownloading = true;
+                    updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
+                }
             }
             
             // Download packets
             if (isDownloading) {
+                console.log('Download packet received:', Array.from(data).map(b => b.toString(16)));
+                
+                // First try to handle as binary packet
+                const packetType = data[0];
+                
+                if (packetType === 0x01 || packetType === 0xFA) { // START packet (0x01 or 0xFA)
+                    console.log('Received START packet');
+                    downloadBuffer = '';
+                    downloadProgress = 0;
+                    updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
+                } 
+                else if (packetType === 0x03 || packetType === 0xFC) { // END packet (0x03 or 0xFC)
+                    console.log('Received END packet, download complete');
+                    await handleDownloadComplete();
+                }
+                else if (packetType === 0xFF) { // Progress packet
+                    if (data.length > 1) {
+                        downloadProgress = data[1];
+                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
+                    }
+                }
+                else { // Data packet or unknown - assume it's data
+                    try {
+                        // Check if first byte might be a marker
+                        const content = (packetType === 0x02 || packetType === 0xFD) ? data.slice(1) : data;
+                        const textDecoder = new TextDecoder();
+                        const logData = textDecoder.decode(content);
+                        downloadBuffer += logData;
+                        console.log(`Added data chunk of ${content.length} bytes, buffer size: ${downloadBuffer.length}`);
+                    } catch (e) {
+                        console.error('Error decoding packet:', e);
+                    }
+                }
+                
+                // If binary handling fails, try text-based protocol as fallback
                 try {
                     const dataString = new TextDecoder().decode(data);
-                    console.log('Received data:', dataString.substring(0, 50) + (dataString.length > 50 ? '...' : ''));
                     
                     if (dataString.startsWith("PROGRESS:")) {
                         const progress = parseInt(dataString.split(":")[1]);
@@ -684,31 +726,17 @@
                         console.log('Download complete, saving file...');
                         await handleDownloadComplete();
                     }
-                    else if (!dataString.startsWith("START:") && !dataString.startsWith("PROGRESS:")) {
-                        // This is file data, append to buffer
-                        downloadBuffer += dataString;
-                        console.log('Added data chunk, buffer size:', downloadBuffer.length);
-                    }
-                } catch (e) {
-                    console.error('Error processing download data:', e);
-                }
-            } else {
-                // Not in download mode, check if this is a start command
-                try {
-                    const dataString = new TextDecoder().decode(data);
-                    if (dataString.startsWith("START:")) {
+                    else if (dataString.startsWith("START:")) {
                         const parts = dataString.split(":");
                         if (parts.length >= 3) {
                             downloadBuffer = '';
                             downloadProgress = 0;
-                            isDownloading = true;
                             console.log('Starting download of:', availableSessions[currentDownloadIndex].filename);
                             updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
                         }
                     }
                 } catch (e) {
-                    // Not a text packet, handle other commands
-                    // ... existing command handling ...
+                    // Ignore errors in fallback text handling
                 }
             }
         }
