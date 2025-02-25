@@ -1217,21 +1217,39 @@
                 downloadProgress = 0;
                 isDownloading = true;
                 
-                // Create a simple command buffer (just command and first byte of filename)
-                const cmdBuffer = new Uint8Array(2);
-                cmdBuffer[0] = 9; // Command 9 - Start download
-                cmdBuffer[1] = session.filename.charCodeAt(0); // First character of filename
+                // Use smaller chunks for more reliable transmission
+                const cmdBuffer = new Uint8Array([9]); // Just command 9
+                console.log('Sending command byte 9');
                 
-                console.log('Sending simplified download command for:', session.filename);
+                try {
+                    // Try without response first (more reliable for small packets)
+                    await rxCharacteristic.writeValueWithoutResponse(cmdBuffer);
+                } catch (e) {
+                    console.log('Falling back to normal write:', e);
+                    await rxCharacteristic.writeValue(cmdBuffer);
+                }
                 
-                // Send the command with a simple buffer
-                await rxCharacteristic.writeValue(cmdBuffer);
+                // Add a small delay
+                await new Promise(resolve => setTimeout(resolve, 200));
                 
-                // Then send the filename in a second write
-                const filenameBuffer = new TextEncoder().encode(session.filename);
-                await rxCharacteristic.writeValue(filenameBuffer);
+                // Get only the filename part (no path)
+                let filename = session.filename;
+                if (filename.includes('/')) {
+                    filename = filename.split('/').pop();
+                }
                 
-                console.log('Download request completed for:', session.filename);
+                console.log('Sending filename (simplified):', filename);
+                const filenameBuffer = new TextEncoder().encode(filename);
+                
+                try {
+                    // Try without response
+                    await rxCharacteristic.writeValueWithoutResponse(filenameBuffer);
+                } catch (e) {
+                    console.log('Falling back to normal write for filename:', e);
+                    await rxCharacteristic.writeValue(filenameBuffer);
+                }
+                
+                console.log('Download request completed');
             } catch (error) {
                 console.error('Failed to send request:', error);
                 updateDownloadStatus('Download failed: ' + error.message);
