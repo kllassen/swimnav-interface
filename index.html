@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/25 10:47</title>
+    <title>SwimNav Control 02/25 10:55</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -584,6 +584,24 @@
             const value = event.target.value;
             const data = new Uint8Array(value.buffer);
             
+            if (data.length < 1) return;
+            
+            const command = data[0];
+            
+            // Handle file transfer commands first
+            if (command === FILE_XFER_START) {
+                await handleTransferStart(data);
+                return;
+            }
+            else if (command === FILE_XFER_DATA) {
+                await handleTransferData(data);
+                return;
+            }
+            else if (command === FILE_XFER_END) {
+                await handleTransferEnd(data);
+                return;
+            }
+            
             // Try to decode as text first (for better debugging)
             let dataString = '';
             try {
@@ -597,7 +615,7 @@
             }
             
             // Handle file download protocol
-            if (isDownloading || dataString.startsWith('START_FILE')) {
+            if (isDownloading || dataString.startsWith('START')) {
                 // Check for text markers
                 if (dataString === 'START_FILE') {
                     console.log('Received START_FILE marker');
