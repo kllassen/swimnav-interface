@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/25 10:30</title>
+    <title>SwimNav Control 02/25 10:36</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1255,6 +1255,29 @@
             }
         }
 
+        // Send acknowledgment for a file transfer packet
+        async function sendAck(packetId) {
+            if (!rxCharacteristic) {
+                console.error('BLE not connected, cannot send ACK');
+                return false;
+            }
+            
+            const ackPacket = new Uint8Array([
+                FILE_XFER_ACK,
+                (packetId >> 8) & 0xFF,
+                packetId & 0xFF
+            ]);
+            
+            try {
+                await rxCharacteristic.writeValue(ackPacket);
+                console.log(`Sent ACK for packet ${packetId}`);
+                return true;
+            } catch (error) {
+                console.error('Error sending ACK:', error);
+                return false;
+            }
+        }
+        
     </script>
 </body>
 </html>
