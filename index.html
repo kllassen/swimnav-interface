@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/25 10:39</title>
+    <title>SwimNav Control 02/25 10:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1323,6 +1323,60 @@
             
             // Send acknowledgment
             await sendAck(packetId);
+        }
+
+        // Handle data packet
+        async function handleTransferData(data) {
+            if (!fileTransfer.active) {
+                console.error('Received data packet but no transfer is active');
+                return;
+            }
+            
+            if (data.length < 9) {
+                console.error('Invalid data packet length');
+                return;
+            }
+            
+            const view = new DataView(data.buffer);
+            const packetId = (view.getUint8(1) << 8) | view.getUint8(2);
+            const offset = (view.getUint8(3) << 24) | (view.getUint8(4) << 16) | 
+                          (view.getUint8(5) << 8) | view.getUint8(6);
+            const chunkSize = (view.getUint8(7) << 8) | view.getUint8(8);
+            
+            console.log(`Received data packet ${packetId}: offset=${offset}, size=${chunkSize}`);
+            
+            if (packetId !== fileTransfer.currentPacketId + 1) {
+                console.error(`Unexpected packet ID: got=${packetId}, expected=${fileTransfer.currentPacketId + 1}`);
+                await sendAck(fileTransfer.currentPacketId); // Re-acknowledge last good packet
+                return;
+            }
+            
+            if (offset !== fileTransfer.bytesReceived) {
+                console.error(`Offset mismatch: got=${offset}, expected=${fileTransfer.bytesReceived}`);
+                await sendAck(fileTransfer.currentPacketId);
+                return;
+            }
+            
+            if (data.length < 9 + chunkSize) {
+                console.error('Data chunk truncated');
+                await sendAck(fileTransfer.currentPacketId);
+                return;
+            }
+            
+            // Process data chunk
+            try {
+                const decoder = new TextDecoder();
+                const chunk = decoder.decode(data.subarray(9, 9 + chunkSize));
+                fileTransfer.downloadBuffer += chunk;
+                fileTransfer.bytesReceived += chunkSize;
+                fileTransfer.currentPacketId = packetId;
+                
+                // Send acknowledgment
+                await sendAck(packetId);
+            } catch (error) {
+                console.error('Error processing data chunk:', error);
+                await sendAck(fileTransfer.currentPacketId);
+            }
         }
         
     </script>
