@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/25 10:36</title>
+    <title>SwimNav Control 02/25 10:39</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1276,6 +1276,53 @@
                 console.error('Error sending ACK:', error);
                 return false;
             }
+        }
+
+        // Handle start of file transfer
+        async function handleTransferStart(data) {
+            if (data.length < 8) {
+                console.error('Invalid start packet length');
+                return;
+            }
+            
+            const view = new DataView(data.buffer);
+            const packetId = (view.getUint8(1) << 8) | view.getUint8(2);
+            const fileSize = (view.getUint8(3) << 24) | (view.getUint8(4) << 16) | 
+                            (view.getUint8(5) << 8) | view.getUint8(6);
+            const filenameLen = view.getUint8(7);
+            
+            if (data.length < 8 + filenameLen) {
+                console.error('Filename truncated in start packet');
+                return;
+            }
+            
+            const decoder = new TextDecoder();
+            const filename = decoder.decode(data.subarray(8, 8 + filenameLen));
+            
+            console.log(`File transfer starting: ${filename}, size: ${fileSize} bytes`);
+            
+            // Initialize file transfer state
+            fileTransfer = {
+                active: true,
+                filename: filename,
+                fileSize: fileSize,
+                bytesReceived: 0,
+                currentPacketId: packetId,
+                downloadBuffer: '',
+                startTime: Date.now(),
+                progressInterval: null
+            };
+            
+            // Start progress reporting
+            fileTransfer.progressInterval = setInterval(() => {
+                if (fileTransfer.active) {
+                    const percentComplete = Math.floor((fileTransfer.bytesReceived / fileTransfer.fileSize) * 100);
+                    updateDownloadStatus(`Downloading ${fileTransfer.filename}... ${percentComplete}%`);
+                }
+            }, 500);
+            
+            // Send acknowledgment
+            await sendAck(packetId);
         }
         
     </script>
