@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/24 1:11</title>
+    <title>SwimNav Control 02/25 10:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -381,6 +381,25 @@
     </div>
 
     <script>
+        // File transfer command constants
+        const FILE_XFER_START = 0xAD;  // Transfer start marker
+        const FILE_XFER_ACK = 0xAE;    // Acknowledgment
+        const FILE_XFER_DATA = 0xAF;   // Data packet
+        const FILE_XFER_END = 0xB0;    // Transfer end marker
+        const FILE_XFER_ABORT = 0xB1;  // Abort transfer
+        
+        // File transfer state
+        let fileTransfer = {
+            active: false,
+            filename: '',
+            fileSize: 0,
+            bytesReceived: 0,
+            currentPacketId: 0,
+            downloadBuffer: '',
+            startTime: 0,
+            progressInterval: null
+        };
+        
         let bleDevice = null;
         let txCharacteristic = null;
         let rxCharacteristic = null;
