@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 02/25 10:45</title>
+    <title>SwimNav Control 02/25 10:47</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1376,6 +1376,100 @@
             } catch (error) {
                 console.error('Error processing data chunk:', error);
                 await sendAck(fileTransfer.currentPacketId);
+            }
+        }
+
+        // Handle end of transfer
+        async function handleTransferEnd(data) {
+            if (!fileTransfer.active) {
+                console.error('Received end packet but no transfer is active');
+                return;
+            }
+            
+            if (data.length < 3) {
+                console.error('Invalid end packet length');
+                return;
+            }
+            
+            const view = new DataView(data.buffer);
+            const packetId = (view.getUint8(1) << 8) | view.getUint8(2);
+            
+            console.log(`Received end packet ${packetId}`);
+            
+            if (packetId !== fileTransfer.currentPacketId + 1) {
+                console.error(`Unexpected end packet ID: got=${packetId}, expected=${fileTransfer.currentPacketId + 1}`);
+                // Send ACK anyway to complete transfer
+            }
+            
+            // Send final acknowledgment
+            await sendAck(packetId);
+            
+            // Process completed transfer
+            await processCompletedTransfer();
+        }
+        
+        // Process completed transfer
+        async function processCompletedTransfer() {
+            // Clear progress interval
+            if (fileTransfer.progressInterval) {
+                clearInterval(fileTransfer.progressInterval);
+            }
+            
+            const elapsed = (Date.now() - fileTransfer.startTime) / 1000;
+            const kbps = (fileTransfer.fileSize / 1024) / elapsed;
+            
+            console.log(`Transfer complete: ${elapsed.toFixed(2)}s, ${kbps.toFixed(2)} KB/s`);
+            updateDownloadStatus(`Download complete: ${fileTransfer.filename}`);
+            
+            // Save the file
+            try {
+                // Add metadata as header comments
+                const metadata = [
+                    `# File: ${fileTransfer.filename}`,
+                    `# Size: ${fileTransfer.fileSize} bytes (${(fileTransfer.fileSize / 1024).toFixed(2)} KB)`,
+                    `# Downloaded: ${new Date().toISOString()}`,
+                    `# Transfer duration: ${elapsed.toFixed(2)} seconds`,
+                    `# Transfer speed: ${kbps.toFixed(2)} KB/s`,
+                    ''
+                ].join('\n');
+                
+                // Combine metadata with file content
+                const fullData = metadata + fileTransfer.downloadBuffer;
+                
+                // Create downloadable file
+                const blob = new Blob([fullData], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Extract just the filename without path
+                let saveFilename = fileTransfer.filename;
+                if (saveFilename.startsWith('/')) {
+                    saveFilename = saveFilename.substring(1);
+                }
+                
+                a.download = saveFilename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log(`File saved as ${saveFilename}`);
+                
+                // Reset file transfer state
+                fileTransfer.active = false;
+                fileTransfer.downloadBuffer = '';
+                
+                // If there are more files in the queue, start the next one
+                if (selectedSessions && currentDownloadIndex < selectedSessions.length - 1) {
+                    currentDownloadIndex++;
+                    setTimeout(() => {
+                        startDownloadingSingleSession(selectedSessions[currentDownloadIndex]);
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('Error saving file:', error);
+                updateDownloadStatus(`Error saving file: ${error.message}`);
             }
         }
         
