@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/11 9:30</title>
+    <title>SwimNav Control 03/11 10:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -374,11 +374,11 @@
         <div class="session-list" id="sessionList">
             <!-- Session items will be added here dynamically -->
         </div>
-        <div class="dialog-buttons" style="text-align: right;">
-            <button onclick="cancelSessionDialog()">Cancel</button>
-            <button onclick="downloadSelectedSessions()" style="margin-left: 10px;">Download</button>
-            <button onclick="deleteSelectedSessions()" style="margin-left: 10px; background-color: #dc3545;">Delete</button>
-        </div>
+    <div class="dialog-buttons" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button onclick="cancelSessionDialog()">Cancel</button>
+        <button onclick="downloadSelectedSessions()">Download</button>
+        <button onclick="deleteSelectedSessions()" style="background-color: #dc3545;">Delete</button>
+    </div>
     </div>
 
     <script>
