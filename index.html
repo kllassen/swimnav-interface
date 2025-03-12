@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/08 9:10</title>
+    <title>SwimNav Control 03/11 9:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -374,9 +374,10 @@
         <div class="session-list" id="sessionList">
             <!-- Session items will be added here dynamically -->
         </div>
-        <div class="dialog-buttons">
+        <div class="dialog-buttons" style="text-align: right;">
             <button onclick="cancelSessionDialog()">Cancel</button>
             <button onclick="downloadSelectedSessions()" style="margin-left: 10px;">Download</button>
+            <button onclick="deleteSelectedSessions()" style="margin-left: 10px; background-color: #dc3545;">Delete</button>
         </div>
     </div>
 
@@ -1496,6 +1497,109 @@
                 console.error('Error saving file:', error);
                 updateDownloadStatus(`Error saving file: ${error.message}`);
             }
+        }
+
+        // Add a confirmation dialog for deleting files
+        function deleteSelectedSessions() {
+            const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
+                .map(checkbox => {
+                    return availableSessions.find(s => s.filename === checkbox.dataset.filename);
+                });
+
+            if (selectedSessions.length === 0) {
+                alert('Please select at least one session to delete');
+                return;
+            }
+
+            // Confirmation dialog
+            const fileNames = selectedSessions.map(s => s.filename).join(", ");
+            const confirmDelete = confirm(`Are you sure you want to delete the following file(s)?\n\n${fileNames}\n\nThis action cannot be undone.`);
+            
+            if (confirmDelete) {
+                deleteFiles(selectedSessions);
+            }
+        }
+
+        // Function to delete files one by one
+        async function deleteFiles(sessions) {
+            if (!sessions || sessions.length === 0) return;
+            
+            cancelSessionDialog();
+            updateDownloadStatus('Deleting selected files...');
+            
+            for (const session of sessions) {
+                try {
+                    await deleteFile(session.filename);
+                } catch (error) {
+                    console.error('Error deleting file:', error);
+                    updateDownloadStatus(`Error deleting ${session.filename}: ${error.message}`);
+                    return;
+                }
+            }
+            
+            updateDownloadStatus('Files deleted successfully');
+            
+            // Refresh the file list after deletion
+            setTimeout(() => {
+                downloadData();
+            }, 1000);
+        }
+
+        // Function to delete a single file
+        async function deleteFile(filename) {
+            return new Promise(async (resolve, reject) => {
+                if (!rxCharacteristic) {
+                    reject(new Error('Not connected'));
+                    return;
+                }
+                
+                console.log(`Deleting file: ${filename}`);
+                
+                // Set up a listener for the delete response
+                const deleteResponseHandler = (event) => {
+                    const value = event.target.value;
+                    const data = new Uint8Array(value.buffer);
+                    
+                    if (data[0] === 0xFC) {
+                        txCharacteristic.removeEventListener('characteristicvaluechanged', deleteResponseHandler);
+                        
+                        if (data[1] === 1) {
+                            console.log(`File ${filename} deleted successfully`);
+                            resolve();
+                        } else {
+                            reject(new Error(`Failed to delete file ${filename}`));
+                        }
+                    }
+                };
+                
+                // Add the response handler
+                txCharacteristic.addEventListener('characteristicvaluechanged', deleteResponseHandler);
+                
+                // Set a timeout for the response
+                const timeout = setTimeout(() => {
+                    txCharacteristic.removeEventListener('characteristicvaluechanged', deleteResponseHandler);
+                    reject(new Error('Delete operation timed out'));
+                }, 5000);
+                
+                try {
+                    // Send the delete command
+                    const cmdBuffer = new Uint8Array([11]); // Command 11 - Delete File
+                    await rxCharacteristic.writeValue(cmdBuffer);
+                    
+                    // Add a small delay
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // Send the filename
+                    const filenameBuffer = new TextEncoder().encode(filename);
+                    await rxCharacteristic.writeValue(filenameBuffer);
+                    
+                    console.log('Delete request sent');
+                } catch (error) {
+                    clearTimeout(timeout);
+                    txCharacteristic.removeEventListener('characteristicvaluechanged', deleteResponseHandler);
+                    reject(error);
+                }
+            });
         }
         
     </script>
