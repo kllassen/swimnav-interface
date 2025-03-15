@@ -1150,7 +1150,8 @@
                     errorCone: document.getElementById('errorCone').value,
                     waypointZone: document.getElementById('waypointZone').value,
                     hystCone: document.getElementById('hystCone').value,
-                    triggers: document.getElementById('triggers').value
+                    triggers: document.getElementById('triggers').value,
+                    logOnly: document.getElementById('logOnly').checked ? 1 : 0
                 },
                 waypoints: waypoints
             };
@@ -1179,6 +1180,7 @@
                     document.getElementById('waypointZone').value = config.settings.waypointZone;
                     document.getElementById('hystCone').value = config.settings.hystCone;
                     document.getElementById('triggers').value = config.settings.triggers;
+                    document.getElementById('logOnly').checked = config.settings.logOnly == 1;
                     
                     Object.entries(config.settings).forEach(([type, value]) => {
                         sendSetting(type, value);
