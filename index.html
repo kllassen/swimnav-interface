@@ -780,6 +780,7 @@
                 case 'waypointZone': cmd = 2; break;
                 case 'hystCone': cmd = 3; break;
                 case 'triggers': cmd = 4; break;
+                case 'logOnly': cmd = 12; break;
                 default: return;
             }
             sendCommand(cmd, parseInt(value));
