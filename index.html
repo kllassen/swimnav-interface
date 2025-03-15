@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/11 10:25</title>
+    <title>SwimNav Control 03/15 12:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -339,6 +339,14 @@
                 <option value="4">4</option>
                 <option value="5">5</option>
             </select>
+        </div>
+
+        <div class="control">
+            <label for="logOnly">Log Only Mode:</label>
+            <input type="checkbox" id="logOnly" onchange="sendSetting('logOnly', this.checked ? 1 : 0)" disabled>
+            <span style="font-size: 0.8em; color: #666; margin-top: 5px; display: block;">
+                When enabled, navigation signals will be suppressed, but logging will continue as normal.
+            </span>
         </div>
 
         <div class="control">
