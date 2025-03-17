@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/16 10:25</title>
+    <title>SwimNav Control 03/16 10:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -75,7 +75,7 @@
     .sidebar {
         width: 450px;
         background: #f8f9fa;
-        padding: 0; /* Changed from 20px to allow tabs to span full width */
+        padding: 0;
         overflow-y: auto;
         height: 100vh;
         position: fixed;
@@ -84,9 +84,9 @@
         border-right: 1px solid #dee2e6;
         display: flex;
         flex-direction: column;
-        align-items: center; /* Restore this property */
-        max-height: 100vh; /* Ensures it doesn't exceed viewport height */
-        box-sizing: border-box; /* Includes padding in height calculation */
+        align-items: center;
+        max-height: 100vh;
+        box-sizing: border-box;
     }
     
     .tab-container {
@@ -132,7 +132,7 @@
         
         .main-content {
             flex: 1;
-            margin-left: 500px;
+            margin-left: 450px;
             height: 100vh;
             width: calc(100% - 450px); /* Set exact width */
         }
