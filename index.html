@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/16 10:18</title>
+    <title>SwimNav Control 03/16 10:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -84,6 +84,7 @@
         border-right: 1px solid #dee2e6;
         display: flex;
         flex-direction: column;
+        align-items: center; /* Restore this property */
         max-height: 100vh; /* Ensures it doesn't exceed viewport height */
         box-sizing: border-box; /* Includes padding in height calculation */
     }
@@ -92,7 +93,6 @@
         display: flex;
         width: 100%;
         border-bottom: 1px solid #dee2e6;
-        justify-content: center; /* Center the buttons */
     }
     
     .tab-button {
@@ -122,6 +122,8 @@
         flex-direction: column;
         align-items: center;
         overflow-y: auto;
+        flex: 1; /* Allow content to expand */
+        box-sizing: border-box; /* Include padding in width calculation */
     }
     
     .tab-content.active {
@@ -132,6 +134,7 @@
             flex: 1;
             margin-left: 500px;
             height: 100vh;
+            width: calc(100% - 450px); /* Set exact width */
         }
         
         h1 {
