@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/16 9:54</title>
+    <title>SwimNav Control 03/16 10:02</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -92,11 +92,12 @@
         display: flex;
         width: 100%;
         border-bottom: 1px solid #dee2e6;
+        justify-content: center; /* Center the buttons */
     }
     
     .tab-button {
-        flex: 1;
-        padding: 15px 0;
+        width: 120px; /* Set a fixed width instead of flex: 1 */
+        padding: 10px 0; /* Reduce padding */
         background: #f1f1f1;
         border: none;
         cursor: pointer;
@@ -320,7 +321,7 @@
 <div class="sidebar">
     <!-- Tab Buttons -->
     <div class="tab-container">
-        <button class="tab-button active" onclick="switchTab('navigation')">Navigation</button>
+        <button class="tab-button active" onclick="switchTab('navigation')">Settings</button>
         <button class="tab-button" onclick="switchTab('swimData')">Swim Data</button>
     </div>
     
@@ -441,7 +442,6 @@
             <input type="file" id="trackFileInput" accept=".csv,.txt" onchange="handleTrackFileSelect(this)" disabled>
             
             <div id="track-info" style="margin-top: 10px; font-size: 0.9em; display: none;">
-                <p><strong>File:</strong> <span id="track-filename">-</span></p>
                 <p><strong>Points:</strong> <span id="track-point-count">0</span></p>
                 <p><strong>Distance:</strong> <span id="track-distance">0</span> km</p>
             </div>
@@ -2049,7 +2049,6 @@ async function disconnect() {
                 // Update track info
                 document.getElementById('track-point-count').textContent = trackPoints.length;
                 document.getElementById('track-distance').textContent = distance.toFixed(2);
-                document.getElementById('track-filename').textContent = currentTrackFile || '-';
                 
                 // Show track info and enable buttons
                 trackStatus.textContent = 'Track loaded';
