@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/16 10:45</title>
+    <title>SwimNav Control 03/16 10:50</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1862,6 +1862,40 @@ async function disconnect() {
                 map: map
             });
             
+            // Add data point markers (small dots)
+            // If there are many points, add dots at regular intervals to avoid cluttering
+            const markerInterval = Math.max(1, Math.ceil(trackData.length / 100)); // Show at most ~100 markers
+            
+            for (let i = 0; i < trackData.length; i += markerInterval) {
+                const point = trackData[i];
+                const dotMarker = new google.maps.Marker({
+                    position: { lat: point.lat, lng: point.lng },
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 4, // Small dot
+                        fillColor: "#0066FF", // Blue color
+                        fillOpacity: 0.7,
+                        strokeWeight: 1,
+                        strokeColor: "#FFFFFF"
+                    },
+                    title: `Point ${i + 1}`,
+                    zIndex: 1 // Lower than start/end markers
+                });
+                
+                // Add click listener to show info window
+                const infoContent = createInfoWindowContent(point, i);
+                dotMarker.addListener('click', () => {
+                    if (trackInfoWindow) trackInfoWindow.close();
+                    trackInfoWindow = new google.maps.InfoWindow({
+                        content: infoContent
+                    });
+                    trackInfoWindow.open(map, dotMarker);
+                });
+                
+                trackMarkers.push(dotMarker);
+            }
+            
             // Add markers for start and end points
             if (trackData.length > 0) {
                 // Start point (green)
@@ -1876,7 +1910,8 @@ async function disconnect() {
                         strokeWeight: 1,
                         strokeColor: "#FFFFFF"
                     },
-                    title: "Start"
+                    title: "Start",
+                    zIndex: 2 // Higher than regular point markers
                 });
                 
                 // Add click listener to show info window for start point
@@ -1904,7 +1939,8 @@ async function disconnect() {
                         strokeWeight: 1,
                         strokeColor: "#FFFFFF"
                     },
-                    title: "End"
+                    title: "End",
+                    zIndex: 2 // Higher than regular point markers
                 });
                 
                 // Add click listener to show info window for end point
