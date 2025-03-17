@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/15 12:35</title>
+    <title>SwimNav Control 03/16 9:14</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -272,7 +272,15 @@
     </style>
 </head>
 <body>
-    <div class="sidebar">
+<div class="sidebar">
+    <!-- Tab Buttons -->
+    <div class="tab-container">
+        <button class="tab-button active" onclick="switchTab('navigation')">Navigation</button>
+        <button class="tab-button" onclick="switchTab('swimData')">Swim Data</button>
+    </div>
+    
+    <!-- Navigation Tab Content -->
+    <div id="navigationTab" class="tab-content active">
         <h1>SwimNav Control</h1>
         <button id="connectBtn" onclick="connect()">Connect to Device</button>
         <div id="bleStatus" class="control">Status: Disconnected</div>
@@ -352,9 +360,9 @@
         <div class="control">
             <label>Waypoint Coordinates:</label>
             <input type="text" 
-                   id="wpCoords" 
-                   placeholder="42.540340, -83.214491"
-                   disabled>
+                  id="wpCoords" 
+                  placeholder="42.540340, -83.214491"
+                  disabled>
             <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
                 Click on map or enter coordinates in format: latitude, longitude
             </div>
@@ -366,11 +374,23 @@
         <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
         <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
         <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
-        <button id="downloadBtn" onclick="downloadData()" disabled>Swim Data Management</button>
         <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
         <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
         <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
     </div>
+    
+    <!-- Swim Data Tab Content -->
+    <div id="swimDataTab" class="tab-content">
+        <h1>SwimNav Data</h1>
+        <button id="connectBtnData" onclick="connect()">Connect to Device</button>
+        <div id="bleStatusData" class="control">Status: Disconnected</div>
+        
+        <!-- Only the download button goes here initially -->
+        <button id="downloadBtn" onclick="downloadData()" disabled>Swim Data Management</button>
+        
+        <!-- We'll add track visualization controls here in later steps -->
+    </div>
+</div>
 
     <div class="main-content">
         <div id="map-container">
