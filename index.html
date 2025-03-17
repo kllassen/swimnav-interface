@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/16 9:40</title>
+    <title>SwimNav Control 03/16 9:54</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -430,10 +430,27 @@
         <button id="connectBtnData" onclick="connect()">Connect to Device</button>
         <div id="bleStatusData" class="control">Status: Disconnected</div>
         
-        <!-- Only the download button goes here initially -->
+        <!-- Download button -->
         <button id="downloadBtn" onclick="downloadData()" disabled>Swim Data Management</button>
         
-        <!-- We'll add track visualization controls here in later steps -->
+        <!-- Track Controls -->
+        <div class="control">
+            <label>Track Visualization:</label>
+            <div id="track-status" style="margin-bottom: 10px; font-style: italic;">No track loaded</div>
+            
+            <input type="file" id="trackFileInput" accept=".csv,.txt" onchange="handleTrackFileSelect(this)" disabled>
+            
+            <div id="track-info" style="margin-top: 10px; font-size: 0.9em; display: none;">
+                <p><strong>File:</strong> <span id="track-filename">-</span></p>
+                <p><strong>Points:</strong> <span id="track-point-count">0</span></p>
+                <p><strong>Distance:</strong> <span id="track-distance">0</span> km</p>
+            </div>
+            
+            <div style="display: flex; gap: 5px; margin-top: 10px;">
+                <button id="toggleTrackBtn" onclick="toggleTrackVisibility()" disabled style="width: 45%;">Show/Hide Track</button>
+                <button id="clearTrackBtn" onclick="clearTrack()" disabled style="width: 45%;">Clear Track</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -595,6 +612,14 @@
             document.getElementById('saveBtn').disabled = !enabled;
             document.getElementById('loadBtn').disabled = !enabled;
             document.getElementById('downloadBtn').disabled = !enabled;
+            
+            // Track controls
+            document.getElementById('trackFileInput').disabled = !enabled;
+            
+            // Only enable these buttons if a track is loaded
+            const trackLoaded = trackPoints.length > 0;
+            document.getElementById('toggleTrackBtn').disabled = !enabled || !trackLoaded;
+            document.getElementById('clearTrackBtn').disabled = !enabled || !trackLoaded;
         }
 
 async function connect() {
@@ -1757,6 +1782,323 @@ async function disconnect() {
                 if (match) return match;
             }
             return null;
+        }
+        
+        // Function to handle track file selection
+        function handleTrackFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Check if it's a CSV file
+            if (!file.name.toLowerCase().endsWith('.csv') && !file.name.toLowerCase().endsWith('.txt')) {
+                alert('Please select a valid CSV or TXT file');
+                input.value = '';
+                return;
+            }
+            
+            loadTrackFile(file);
+        }
+        
+        // Function to load and process a track file
+        function loadTrackFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                currentTrackFile = file.name;
+                
+                try {
+                    const trackData = parseTrackData(csvText);
+                    if (trackData.length > 0) {
+                        displayTrack(trackData);
+                        console.log(`Loaded ${trackData.length} track points from ${currentTrackFile}`);
+                    } else {
+                        alert('No valid GPS data found in the file');
+                    }
+                } catch (error) {
+                    console.error('Error parsing track file:', error);
+                    alert('Failed to parse track file: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('Error reading file');
+                alert('Error reading file');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Function to display track on map
+        function displayTrack(trackData) {
+            // Clear existing track if any
+            clearTrack();
+            
+            if (!trackData || trackData.length === 0) {
+                console.warn('No valid track data to display');
+                return;
+            }
+            
+            // Store track points
+            trackPoints = trackData;
+            
+            // Create track path coordinates
+            const pathCoords = trackData.map(point => ({ lat: point.lat, lng: point.lng }));
+            
+            // Create and display the track path
+            trackPath = new google.maps.Polyline({
+                path: pathCoords,
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.8,
+                strokeWeight: 3,
+                map: map
+            });
+            
+            // Add markers for start and end points
+            if (trackData.length > 0) {
+                // Start point (green)
+                const startMarker = new google.maps.Marker({
+                    position: { lat: trackData[0].lat, lng: trackData[0].lng },
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#00FF00",
+                        fillOpacity: 0.8,
+                        strokeWeight: 1,
+                        strokeColor: "#FFFFFF"
+                    },
+                    title: "Start"
+                });
+                
+                // Add click listener to show info window for start point
+                const startInfoContent = createInfoWindowContent(trackData[0], 0, "Start");
+                startMarker.addListener('click', () => {
+                    if (trackInfoWindow) trackInfoWindow.close();
+                    trackInfoWindow = new google.maps.InfoWindow({
+                        content: startInfoContent
+                    });
+                    trackInfoWindow.open(map, startMarker);
+                });
+                
+                trackMarkers.push(startMarker);
+                
+                // End point (red)
+                const endPoint = trackData[trackData.length - 1];
+                const endMarker = new google.maps.Marker({
+                    position: { lat: endPoint.lat, lng: endPoint.lng },
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#FF0000",
+                        fillOpacity: 0.8,
+                        strokeWeight: 1,
+                        strokeColor: "#FFFFFF"
+                    },
+                    title: "End"
+                });
+                
+                // Add click listener to show info window for end point
+                const endInfoContent = createInfoWindowContent(endPoint, trackData.length - 1, "End");
+                endMarker.addListener('click', () => {
+                    if (trackInfoWindow) trackInfoWindow.close();
+                    trackInfoWindow = new google.maps.InfoWindow({
+                        content: endInfoContent
+                    });
+                    trackInfoWindow.open(map, endMarker);
+                });
+                
+                trackMarkers.push(endMarker);
+            }
+            
+            // Fit map to track bounds
+            const bounds = new google.maps.LatLngBounds();
+            pathCoords.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds);
+            
+            // Update UI to show track is displayed
+            updateTrackUI(true);
+            
+            // Add click listener to the track path
+            google.maps.event.addListener(trackPath, 'click', (event) => {
+                // Find the closest point in the track to where the user clicked
+                const closestPoint = findClosestTrackPoint(event.latLng, trackData);
+                if (closestPoint.point) {
+                    // Show info window with point details
+                    if (trackInfoWindow) trackInfoWindow.close();
+                    
+                    trackInfoWindow = new google.maps.InfoWindow({
+                        content: createInfoWindowContent(closestPoint.point, closestPoint.index),
+                        position: event.latLng
+                    });
+                    
+                    trackInfoWindow.open(map);
+                }
+            });
+        }
+        
+        // Find the closest track point to a given map position
+        function findClosestTrackPoint(latLng, trackData) {
+            let closestPoint = null;
+            let closestDistance = Infinity;
+            let closestIndex = -1;
+            
+            trackData.forEach((point, index) => {
+                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                    latLng,
+                    new google.maps.LatLng(point.lat, point.lng)
+                );
+                
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPoint = point;
+                    closestIndex = index;
+                }
+            });
+            
+            return { point: closestPoint, index: closestIndex, distance: closestDistance };
+        }
+        
+        // Function to create info window content for a track point
+        function createInfoWindowContent(point, index, label = null) {
+            let content = `<div style="max-width: 300px">`;
+            
+            // Add label if provided (e.g., "Start" or "End")
+            if (label) {
+                content += `<h3>${label} Point</h3>`;
+            } else {
+                content += `<h3>Track Point ${index + 1}</h3>`;
+            }
+            
+            // Add position
+            content += `<p><strong>Position:</strong> ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}</p>`;
+            
+            // Add other data fields if they exist
+            const excludeKeys = ['lat', 'lng', 'Lat', 'Lng', 'LAT', 'LNG', 'longitude', 'latitude'];
+            
+            Object.keys(point).forEach(key => {
+                if (!excludeKeys.includes(key)) {
+                    let value = point[key];
+                    // Format value based on type
+                    if (typeof value === 'number') {
+                        value = value.toFixed(2);
+                    }
+                    content += `<p><strong>${key}:</strong> ${value}</p>`;
+                }
+            });
+            
+            content += `</div>`;
+            return content;
+        }
+        
+        // Function to clear track from map
+        function clearTrack() {
+            if (trackPath) {
+                trackPath.setMap(null);
+                trackPath = null;
+            }
+            
+            if (trackInfoWindow) {
+                trackInfoWindow.close();
+                trackInfoWindow = null;
+            }
+            
+            trackMarkers.forEach(marker => marker.setMap(null));
+            trackMarkers = [];
+            
+            trackPoints = [];
+            currentTrackFile = '';
+            
+            // Update UI to show no track is displayed
+            updateTrackUI(false);
+        }
+        
+        // Toggle track visibility
+        function toggleTrackVisibility() {
+            if (!trackPath) return;
+            
+            const isVisible = trackPath.getMap() !== null;
+            
+            // Toggle visibility
+            if (isVisible) {
+                // Hide track
+                trackPath.setMap(null);
+                trackMarkers.forEach(marker => marker.setMap(null));
+                document.getElementById('toggleTrackBtn').textContent = 'Show Track';
+            } else {
+                // Show track
+                trackPath.setMap(map);
+                trackMarkers.forEach(marker => marker.setMap(map));
+                document.getElementById('toggleTrackBtn').textContent = 'Hide Track';
+            }
+        }
+        
+        // Update the UI elements related to track display
+        function updateTrackUI(isVisible) {
+            const trackStatus = document.getElementById('track-status');
+            const trackInfo = document.getElementById('track-info');
+            const toggleBtn = document.getElementById('toggleTrackBtn');
+            const clearBtn = document.getElementById('clearTrackBtn');
+            
+            if (trackPoints.length > 0) {
+                // Calculate track statistics
+                const distance = calculateTrackDistance(trackPoints);
+                
+                // Update track info
+                document.getElementById('track-point-count').textContent = trackPoints.length;
+                document.getElementById('track-distance').textContent = distance.toFixed(2);
+                document.getElementById('track-filename').textContent = currentTrackFile || '-';
+                
+                // Show track info and enable buttons
+                trackStatus.textContent = 'Track loaded';
+                trackInfo.style.display = 'block';
+                toggleBtn.disabled = false;
+                clearBtn.disabled = false;
+                
+                // Update toggle button text
+                toggleBtn.textContent = isVisible ? 'Hide Track' : 'Show Track';
+            } else {
+                // Reset UI when no track is loaded
+                trackStatus.textContent = 'No track loaded';
+                trackInfo.style.display = 'none';
+                toggleBtn.disabled = true;
+                clearBtn.disabled = true;
+                toggleBtn.textContent = 'Show Track';
+            }
+        }
+        
+        // Calculate the total distance of the track in kilometers
+        function calculateTrackDistance(points) {
+            let totalDistance = 0;
+            
+            for (let i = 1; i < points.length; i++) {
+                const p1 = points[i-1];
+                const p2 = points[i];
+                
+                totalDistance += haversineDistance(
+                    p1.lat, p1.lng,
+                    p2.lat, p2.lng
+                );
+            }
+            
+            return totalDistance;
+        }
+        
+        // Calculate the haversine distance between two points in kilometers
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in kilometers
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
         
         function switchTab(tabName) {
