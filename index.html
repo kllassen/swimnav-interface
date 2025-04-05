@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 03/16 10:50</title>
+    <title>SwimNav Control 04/04 11:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -26,9 +26,34 @@
         }
 
         function initMap() {
+            // Try to get user's location for map center
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        // Success - use user's location
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        createMap(userLocation);
+                    },
+                    (error) => {
+                        // Error or permission denied - use default location
+                        console.error("Geolocation error:", error);
+                        createMap({ lat: 42.540340, lng: -83.214491 });
+                    }
+                );
+            } else {
+                // Geolocation not supported - use default location
+                console.log("Geolocation not supported by this browser");
+                createMap({ lat: 42.540340, lng: -83.214491 });
+            }
+        }
+        
+        function createMap(center) {
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 13,
-                center: { lat: 42.540340, lng: -83.214491 },
+                center: center,
                 mapTypeId: 'hybrid',
                 tilt: 0,
                 mapTypeControl: true,
@@ -37,7 +62,7 @@
                     position: google.maps.ControlPosition.TOP_RIGHT
                 }
             });
-
+        
             map.addListener('click', function(event) {
                 const lat = event.latLng.lat();
                 const lng = event.latLng.lng();
@@ -61,7 +86,7 @@
         }
 
         // Add listener to load map when page loads
-        window.addEventListener('load', loadGoogleMapsScript);
+        //window.addEventListener('load', loadGoogleMapsScript);
     </script>
     <style>
         body { 
@@ -673,6 +698,8 @@ async function connect() {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         console.log('Requesting stored waypoints...');
+        // Load Google Maps after successful connection
+        loadGoogleMapsScript();
         document.getElementById('loading-message').style.display = 'block';
         await sendCommand(8, 0);
         
