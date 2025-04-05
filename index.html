@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/04 11:45</title>
+    <title>SwimNav Control 04/04 11:52</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -761,6 +761,12 @@ async function disconnect() {
     setControlsState(false);
     waypoints = [];
     updateWaypointsList();
+
+    // Show the loading placeholder again
+    const placeholder = document.getElementById('map-loading-placeholder');
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+    }
 }
         
         async function handleData(event) {
