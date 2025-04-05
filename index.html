@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/04 11:15</title>
+    <title>SwimNav Control 04/04 11:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -60,6 +60,14 @@
                 mapTypeControlOptions: {
                     style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
                     position: google.maps.ControlPosition.TOP_RIGHT
+                }
+            });
+
+            // Hide the loading placeholder when map is idle (fully loaded)
+            map.addListener('idle', function() {
+                const placeholder = document.getElementById('map-loading-placeholder');
+                if (placeholder) {
+                    placeholder.style.display = 'none';
                 }
             });
         
@@ -215,6 +223,26 @@
         #map {
             height: 100%;
             width: 100%;
+        }
+
+        #map-loading-placeholder {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #000000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        }
+        
+        #map-loading-placeholder h1 {
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
         }
         
         .waypoint-list {
@@ -489,6 +517,9 @@
     <div class="main-content">
         <div id="map-container">
             <div id="map"></div>
+             <div id="map-loading-placeholder">
+                <h1>SwimTru.com</h1>
+            </div>
         </div>
     </div>
     
