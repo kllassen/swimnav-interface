@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/04 11:52</title>
+    <title>SwimNav Control 04/12 2:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1822,11 +1822,16 @@ async function disconnect() {
                 if (row.length <= 1) continue;
                 
                 const point = {};
+                
                 headers.forEach((header, index) => {
                     if (index < row.length) {
-                        // Try to convert numeric values
                         const val = row[index].trim();
-                        point[header] = !isNaN(parseFloat(val)) ? parseFloat(val) : val;
+                        // Don't convert timestamp field to number
+                        if (header === 'Timestamp') {
+                            point[header] = val;
+                        } else {
+                            point[header] = !isNaN(parseFloat(val)) ? parseFloat(val) : val;
+                        }
                     }
                 });
                 
