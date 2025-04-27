@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/27 3:07</title>
+    <title>SwimNav Control 04/27 3:17</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="fit-encoder.js"></script>
@@ -557,6 +557,24 @@
             startTime: 0,
             progressInterval: null
         };
+                
+        // FIT file format constants
+        const FIT_FILE_TYPE_ACTIVITY = 4;      // Activity file type (versus course, workout, etc.)
+        const FIT_MESG_NUM_FILE_ID = 0;        // File ID message
+        const FIT_MESG_NUM_RECORD = 20;        // Record message (individual data points)
+        const FIT_SPORT_SWIMMING = 5;          // Swimming sport type
+        const FIT_SUB_SPORT_OPEN_WATER = 29;   // Open water swimming sub-sport
+        
+        // Function to test if FIT encoder is working
+        function testFitEncoder() {
+            console.log("Testing FIT encoder availability");
+            if (typeof FitEncoder === 'undefined') {
+                console.error("FIT encoder library is not loaded");
+                return false;
+            }
+            console.log("FIT encoder library is available");
+            return true;
+        }
         
         let bleDevice = null;
         let txCharacteristic = null;
