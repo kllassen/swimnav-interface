@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/27 5:01</title>
+    <title>SwimNav Control 04/27 5:10</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="data-buffer.js"></script>
@@ -580,64 +580,70 @@
             return true;
         }
         
-        // Basic function to create a FIT file from CSV data
-        function createBasicFitFile(csvData) {
-            try {
-                // Create a new FIT encoder
-                const encoder = new FitEncoder({
-                    force: true // Overwrites existing files
-                });
+        // Simple FIT encoder class for SwimNav data
+        class SwimNavFitEncoder extends FitEncoder {
+            constructor() {
+                super();
                 
-                // Add a simple file ID message (required in all FIT files)
-                encoder.add({
-                    messageType: FIT_MESG_NUM_FILE_ID,
-                    localMessageType: 0,
-                    fields: [
-                        { fieldName: 'type', value: FIT_FILE_TYPE_ACTIVITY }, // Activity file
-                        { fieldName: 'manufacturer', value: 1 },             // Garmin
-                        { fieldName: 'product', value: 0 },                  // Generic
-                        { fieldName: 'time_created', value: Math.floor(Date.now() / 1000) - 631065600 } // Current time in FIT epoch
-                    ]
-                });
+                // Define file ID message (required in all FIT files)
+                this.fileIdMsg = new Message(
+                    FitConstants.mesg_num.FILE_ID,
+                    FitMessages.FILE_ID,
+                    "type",
+                    "manufacturer",
+                    "product",
+                    "time_created"
+                );
                 
-                // We'll add actual GPS data later
+                // Write a basic file ID message
+                this.fileIdMsg.writeDataMessage(
+                    FitConstants.file.ACTIVITY,  // type
+                    1,                         // manufacturer (1 = Garmin)
+                    0,                         // product (0 = Generic)
+                    FitEncoder.toFitTimestamp(new Date())  // time_created
+                );
+                
                 console.log("Created basic FIT file structure");
-                
-                // Return the encoded buffer
-                return encoder.getBuffer();
-            } catch (error) {
-                console.error("Error creating FIT file:", error);
-                return null;
             }
         }
         
         // Function to test FIT file download
         function testFitFileDownload() {
-            console.log("Creating test FIT file...");
-            const fitBuffer = createBasicFitFile();
-            
-            if (!fitBuffer) {
-                console.error("Failed to create FIT file");
+            try {
+                console.log("Creating test FIT file...");
+                
+                // Create a new encoder
+                const encoder = new SwimNavFitEncoder();
+                
+                // Get the encoded file
+                const fitBuffer = encoder.getFile();
+                
+                if (!fitBuffer) {
+                    console.error("Failed to create FIT file");
+                    return false;
+                }
+                
+                // Create a Blob from the buffer
+                const blob = new Blob([fitBuffer], { type: 'application/octet-stream' });
+                
+                // Create a download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "test.fit";
+                
+                // Trigger the download
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log("Test FIT file download initiated");
+                return true;
+            } catch (error) {
+                console.error("Error creating or downloading FIT file:", error);
                 return false;
             }
-            
-            // Create a Blob from the buffer
-            const blob = new Blob([fitBuffer], { type: 'application/octet-stream' });
-            
-            // Create a download link
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = "test.fit";
-            
-            // Trigger the download
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            console.log("Test FIT file download initiated");
-            return true;
         }
         
         let bleDevice = null;
