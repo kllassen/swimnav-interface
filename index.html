@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/27 3:30</title>
+    <title>SwimNav Control 04/27 4:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="fit-encoder.js"></script>
@@ -586,7 +586,7 @@
                 
                 // Add a simple file ID message (required in all FIT files)
                 encoder.add({
-                    messageType: FIT_FILE_TYPE_ACTIVITY,
+                    messageType: FIT_MESG_NUM_FILE_ID,
                     localMessageType: 0,
                     fields: [
                         { fieldName: 'type', value: FIT_FILE_TYPE_ACTIVITY }, // Activity file
@@ -605,6 +605,35 @@
                 console.error("Error creating FIT file:", error);
                 return null;
             }
+        }
+        
+        // Function to test FIT file download
+        function testFitFileDownload() {
+            console.log("Creating test FIT file...");
+            const fitBuffer = createBasicFitFile();
+            
+            if (!fitBuffer) {
+                console.error("Failed to create FIT file");
+                return false;
+            }
+            
+            // Create a Blob from the buffer
+            const blob = new Blob([fitBuffer], { type: 'application/octet-stream' });
+            
+            // Create a download link
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "test.fit";
+            
+            // Trigger the download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log("Test FIT file download initiated");
+            return true;
         }
         
         let bleDevice = null;
