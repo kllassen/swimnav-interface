@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/27 3:17</title>
+    <title>SwimNav Control 04/27 3:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="fit-encoder.js"></script>
@@ -574,6 +574,37 @@
             }
             console.log("FIT encoder library is available");
             return true;
+        }
+        
+        // Basic function to create a FIT file from CSV data
+        function createBasicFitFile(csvData) {
+            try {
+                // Create a new FIT encoder
+                const encoder = new FitEncoder({
+                    force: true // Overwrites existing files
+                });
+                
+                // Add a simple file ID message (required in all FIT files)
+                encoder.add({
+                    messageType: FIT_FILE_TYPE_ACTIVITY,
+                    localMessageType: 0,
+                    fields: [
+                        { fieldName: 'type', value: FIT_FILE_TYPE_ACTIVITY }, // Activity file
+                        { fieldName: 'manufacturer', value: 1 },             // Garmin
+                        { fieldName: 'product', value: 0 },                  // Generic
+                        { fieldName: 'time_created', value: Math.floor(Date.now() / 1000) - 631065600 } // Current time in FIT epoch
+                    ]
+                });
+                
+                // We'll add actual GPS data later
+                console.log("Created basic FIT file structure");
+                
+                // Return the encoded buffer
+                return encoder.getBuffer();
+            } catch (error) {
+                console.error("Error creating FIT file:", error);
+                return null;
+            }
         }
         
         let bleDevice = null;
