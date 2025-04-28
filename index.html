@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/27 9:35</title>
+    <title>SwimNav Control 04/27 10:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -2201,7 +2201,246 @@ async function disconnect() {
                 console.error("Error creating or downloading TCX file:", error);
                 return false;
             }
-        }        
+        }  
+
+        // New test function with more realistic data and lap support
+        function testRealisticTcxWithLaps() {
+            try {
+                console.log("Creating realistic test TCX file with laps");
+                
+                // Use today's date and time
+                const now = new Date();
+                const baseTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0); // 10:00 AM today
+                
+                // Create CSV with realistic points and time intervals
+                let testCsv = "# Realistic test data\ntime,lat,lon,efficiency\n";
+                
+                // Create 20 points with 30-second intervals
+                for (let i = 0; i < 20; i++) {
+                    const time = new Date(baseTime.getTime() + i * 30000); // 30 seconds apart
+                    const lat = 42.54034 + (i * 0.0005); // Distance increments
+                    const lon = -83.214491 + (i * 0.0008);
+                    const efficiency = 25 + Math.sin(i * 0.5) * 5; // Some efficiency changes
+                    
+                    testCsv += `${time.toISOString()},${lat.toFixed(6)},${lon.toFixed(6)},${efficiency.toFixed(1)}\n`;
+                }
+                
+                // Define waypoints for lap creation
+                const waypoints = [
+                    { lat: 42.541590, lon: -83.215091 }, // Near point 5
+                    { lat: 42.543040, lon: -83.215891 }, // Near point 10
+                    { lat: 42.544490, lon: -83.216691 }  // Near point 15
+                ];
+                
+                // Parse points from CSV
+                const points = parseGpsPoints(testCsv);
+                
+                if (!points || points.length === 0) {
+                    console.error("No valid GPS points found in test data");
+                    return false;
+                }
+                
+                // Generate modified TCX content with laps
+                // We'll need to enhance our generateTcxContent function to support laps
+                const tcxContent = generateTcxWithLaps(points, waypoints);
+                
+                if (!tcxContent) {
+                    console.error("Failed to create TCX file with laps");
+                    return false;
+                }
+                
+                // Create a Blob from the TCX content
+                const blob = new Blob([tcxContent], { type: 'application/vnd.garmin.tcx+xml' });
+                
+                // Create a download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "realistic_test_with_laps.tcx";
+                
+                // Trigger the download
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log("Realistic test TCX file with laps download initiated");
+                return true;
+            } catch (error) {
+                console.error("Error creating or downloading realistic TCX file with laps:", error);
+                return false;
+            }
+        }
+        
+        // Function to generate TCX content with laps
+        function generateTcxWithLaps(points, waypoints) {
+            // Generate a random ID for the activity
+            const activityId = `swimnav-${new Date().getTime()}`;
+            
+            // Calculate start and end times
+            let startTime = points[0].time || new Date();
+            let endTime = points[points.length - 1].time || new Date();
+            
+            // TCX XML header
+            let tcx = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            tcx += '<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" ';
+            tcx += 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ';
+            tcx += 'xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 ';
+            tcx += 'http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">\n';
+            
+            // Add activities
+            tcx += '  <Activities>\n';
+            tcx += '    <Activity Sport="Swimming">\n';
+            tcx += `      <Id>${startTime.toISOString()}</Id>\n`;
+            
+            // Find nearest points to each waypoint
+            const lapPoints = findLapPoints(points, waypoints);
+            
+            // Add waypoint at start if not already there
+            if (lapPoints.length === 0 || lapPoints[0] !== 0) {
+                lapPoints.unshift(0);
+            }
+            
+            // Add waypoint at end if not already there
+            if (lapPoints.length === 0 || lapPoints[lapPoints.length - 1] !== points.length - 1) {
+                lapPoints.push(points.length - 1);
+            }
+            
+            // Create laps between waypoints
+            for (let i = 0; i < lapPoints.length - 1; i++) {
+                const startIdx = lapPoints[i];
+                const endIdx = lapPoints[i + 1];
+                
+                // Skip if lap would be empty
+                if (startIdx >= endIdx) continue;
+                
+                const lapStartTime = points[startIdx].time;
+                const lapEndTime = points[endIdx].time;
+                const lapDuration = (lapEndTime - lapStartTime) / 1000; // in seconds
+                
+                // Calculate lap distance
+                let lapDistance = 0;
+                for (let j = startIdx + 1; j <= endIdx; j++) {
+                    lapDistance += haversineDistance(
+                        points[j-1].lat, points[j-1].lon,
+                        points[j].lat, points[j].lon
+                    );
+                }
+                
+                // Convert to meters
+                lapDistance = lapDistance * 1000;
+                
+                // Add lap
+                tcx += `      <Lap StartTime="${lapStartTime.toISOString()}">\n`;
+                tcx += `        <TotalTimeSeconds>${lapDuration}</TotalTimeSeconds>\n`;
+                tcx += `        <DistanceMeters>${lapDistance}</DistanceMeters>\n`;
+                tcx += '        <Intensity>Active</Intensity>\n';
+                tcx += '        <TriggerMethod>Manual</TriggerMethod>\n';
+                
+                // Add track
+                tcx += '        <Track>\n';
+                
+                // Add trackpoints for this lap
+                for (let j = startIdx; j <= endIdx; j++) {
+                    const point = points[j];
+                    tcx += '          <Trackpoint>\n';
+                    tcx += `            <Time>${point.time.toISOString()}</Time>\n`;
+                    tcx += '            <Position>\n';
+                    tcx += `              <LatitudeDegrees>${point.lat}</LatitudeDegrees>\n`;
+                    tcx += `              <LongitudeDegrees>${point.lon}</LongitudeDegrees>\n`;
+                    tcx += '            </Position>\n';
+                    
+                    // Add power (efficiency) if available
+                    if (point.power !== undefined) {
+                        tcx += `            <Extensions>\n`;
+                        tcx += `              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n`;
+                        tcx += `                <Watts>${Math.round(point.power)}</Watts>\n`;
+                        tcx += `              </TPX>\n`;
+                        tcx += `            </Extensions>\n`;
+                    }
+                    
+                    tcx += '          </Trackpoint>\n';
+                }
+                
+                // Close track
+                tcx += '        </Track>\n';
+                
+                // Close lap
+                tcx += '      </Lap>\n';
+            }
+            
+            // Close activity
+            tcx += '    </Activity>\n';
+            tcx += '  </Activities>\n';
+            
+            // Add creator info
+            tcx += '  <Author xsi:type="Application_t">\n';
+            tcx += '    <Name>SwimNav</Name>\n';
+            tcx += '    <Build>\n';
+            tcx += '      <Version>\n';
+            tcx += '        <VersionMajor>1</VersionMajor>\n';
+            tcx += '        <VersionMinor>0</VersionMinor>\n';
+            tcx += '      </Version>\n';
+            tcx += '    </Build>\n';
+            tcx += '    <LangID>en</LangID>\n';
+            tcx += '    <PartNumber>000-00000-00</PartNumber>\n';
+            tcx += '  </Author>\n';
+            
+            // Close TCX
+            tcx += '</TrainingCenterDatabase>';
+            
+            return tcx;
+        }
+        
+        // Function to find points closest to waypoints
+        function findLapPoints(points, waypoints) {
+            if (!waypoints || waypoints.length === 0) {
+                return [];
+            }
+            
+            const lapPoints = [];
+            
+            // Find the nearest point to each waypoint
+            for (const waypoint of waypoints) {
+                let minDistance = Infinity;
+                let nearestPointIndex = -1;
+                
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    const distance = haversineDistance(
+                        waypoint.lat, waypoint.lon,
+                        point.lat, point.lon
+                    );
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestPointIndex = i;
+                    }
+                }
+                
+                if (nearestPointIndex !== -1) {
+                    lapPoints.push(nearestPointIndex);
+                }
+            }
+            
+            // Sort in ascending order and remove duplicates
+            return [...new Set(lapPoints)].sort((a, b) => a - b);
+        }
+        
+        // Helper function: Haversine distance calculation (in kilometers)
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
         
         // Function to display track on map
         function displayTrack(trackData) {
