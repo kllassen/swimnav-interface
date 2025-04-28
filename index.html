@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 04/27 5:10</title>
+    <title>SwimNav Control 04/27 9:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="data-buffer.js"></script>
-    <script src="fit-constants.js"></script>
-    <script src="fit-types.js"></script>
-    <script src="fit-messages.js"></script>
-    <script src="fit-encoder.js"></script>
     <script>
         // Define variables for map functionality
         let map;
@@ -561,90 +556,6 @@
             startTime: 0,
             progressInterval: null
         };
-                
-        // FIT file format constants
-        const FIT_FILE_TYPE_ACTIVITY = 4;      // Activity file type (versus course, workout, etc.)
-        const FIT_MESG_NUM_FILE_ID = 0;        // File ID message
-        const FIT_MESG_NUM_RECORD = 20;        // Record message (individual data points)
-        const FIT_SPORT_SWIMMING = 5;          // Swimming sport type
-        const FIT_SUB_SPORT_OPEN_WATER = 29;   // Open water swimming sub-sport
-        
-        // Function to test if FIT encoder is working
-        function testFitEncoder() {
-            console.log("Testing FIT encoder availability");
-            if (typeof FitEncoder === 'undefined') {
-                console.error("FIT encoder library is not loaded");
-                return false;
-            }
-            console.log("FIT encoder library is available");
-            return true;
-        }
-        
-        // Simple FIT encoder class for SwimNav data
-        class SwimNavFitEncoder extends FitEncoder {
-            constructor() {
-                super();
-                
-                // Define file ID message (required in all FIT files)
-                this.fileIdMsg = new Message(
-                    FitConstants.mesg_num.FILE_ID,
-                    FitMessages.FILE_ID,
-                    "type",
-                    "manufacturer",
-                    "product",
-                    "time_created"
-                );
-                
-                // Write a basic file ID message
-                this.fileIdMsg.writeDataMessage(
-                    FitConstants.file.ACTIVITY,  // type
-                    1,                         // manufacturer (1 = Garmin)
-                    0,                         // product (0 = Generic)
-                    FitEncoder.toFitTimestamp(new Date())  // time_created
-                );
-                
-                console.log("Created basic FIT file structure");
-            }
-        }
-        
-        // Function to test FIT file download
-        function testFitFileDownload() {
-            try {
-                console.log("Creating test FIT file...");
-                
-                // Create a new encoder
-                const encoder = new SwimNavFitEncoder();
-                
-                // Get the encoded file
-                const fitBuffer = encoder.getFile();
-                
-                if (!fitBuffer) {
-                    console.error("Failed to create FIT file");
-                    return false;
-                }
-                
-                // Create a Blob from the buffer
-                const blob = new Blob([fitBuffer], { type: 'application/octet-stream' });
-                
-                // Create a download link
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "test.fit";
-                
-                // Trigger the download
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                console.log("Test FIT file download initiated");
-                return true;
-            } catch (error) {
-                console.error("Error creating or downloading FIT file:", error);
-                return false;
-            }
-        }
         
         let bleDevice = null;
         let txCharacteristic = null;
