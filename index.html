@@ -1905,6 +1905,303 @@ async function disconnect() {
             
             reader.readAsText(file);
         }
+
+        // Function to create a TCX file from CSV data
+        function createTcxFromCsv(csvData) {
+            try {
+                console.log("Creating TCX file from CSV data");
+                
+                // Parse the CSV data to extract track points
+                const points = parseGpsPoints(csvData);
+                
+                if (!points || points.length === 0) {
+                    console.error("No valid GPS points found in CSV data");
+                    return null;
+                }
+                
+                // Create TCX content
+                const tcxContent = generateTcxContent(points);
+                
+                console.log(`Created TCX file with ${points.length} track points`);
+                return tcxContent;
+            } catch (error) {
+                console.error("Error creating TCX file:", error);
+                return null;
+            }
+        }
+        
+        // Function to parse GPS points from CSV data
+        function parseGpsPoints(csvData) {
+            try {
+                const lines = csvData.trim().split('\n');
+                const points = [];
+                
+                // Find header line (skip comments starting with #)
+                let headerLine = 0;
+                while (headerLine < lines.length && lines[headerLine].startsWith('#')) {
+                    headerLine++;
+                }
+                
+                if (headerLine >= lines.length) {
+                    console.error("No header found in CSV data");
+                    return [];
+                }
+                
+                // Parse header to find column indices
+                const headers = lines[headerLine].split(',').map(h => h.trim().toLowerCase());
+                
+                // Find required column indices
+                const latIndex = headers.findIndex(h => h === 'lat' || h === 'latitude');
+                const lonIndex = headers.findIndex(h => h === 'lon' || h === 'lng' || h === 'longitude');
+                const timeIndex = headers.findIndex(h => h === 'time' || h === 'timestamp');
+                
+                // Find optional column indices
+                const efficiencyIndex = headers.findIndex(h => h === 'efficiency' || h === 'efficiency_metric');
+                const elevationIndex = headers.findIndex(h => h === 'ele' || h === 'elevation' || h === 'altitude');
+                
+                if (latIndex === -1 || lonIndex === -1) {
+                    console.error("Latitude and longitude columns not found in CSV");
+                    return [];
+                }
+                
+                // Parse data rows
+                for (let i = headerLine + 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    // Skip empty lines and comments
+                    if (line === '' || line.startsWith('#')) continue;
+                    
+                    const values = line.split(',').map(v => v.trim());
+                    
+                    if (values.length <= Math.max(latIndex, lonIndex)) continue;
+                    
+                    const lat = parseFloat(values[latIndex]);
+                    const lon = parseFloat(values[lonIndex]);
+                    
+                    // Only add valid coordinates
+                    if (!isNaN(lat) && !isNaN(lon) && 
+                        lat >= -90 && lat <= 90 && 
+                        lon >= -180 && lon <= 180) {
+                        
+                        const point = {
+                            lat: lat,
+                            lon: lon
+                        };
+                        
+                        // Add timestamp if available
+                        if (timeIndex !== -1 && values[timeIndex]) {
+                            // Try to parse as ISO date or timestamp
+                            let time;
+                            try {
+                                time = new Date(values[timeIndex]);
+                                if (isNaN(time.getTime())) {
+                                    // Try as Unix timestamp (seconds)
+                                    time = new Date(parseFloat(values[timeIndex]) * 1000);
+                                }
+                                
+                                if (!isNaN(time.getTime())) {
+                                    point.time = time;
+                                }
+                            } catch (e) {
+                                // If time parsing fails, we'll handle this later
+                                console.warn("Could not parse time:", values[timeIndex]);
+                            }
+                        }
+                        
+                        // Add elevation if available
+                        if (elevationIndex !== -1 && values[elevationIndex]) {
+                            const elevation = parseFloat(values[elevationIndex]);
+                            if (!isNaN(elevation)) {
+                                point.elevation = elevation;
+                            }
+                        }
+                        
+                        // Add efficiency (as power) if available
+                        if (efficiencyIndex !== -1 && values[efficiencyIndex]) {
+                            const efficiency = parseFloat(values[efficiencyIndex]);
+                            if (!isNaN(efficiency)) {
+                                point.power = efficiency;
+                            }
+                        }
+                        
+                        points.push(point);
+                    }
+                }
+                
+                return points;
+            } catch (error) {
+                console.error("Error parsing GPS points from CSV:", error);
+                return [];
+            }
+        }
+        
+        // Function to generate TCX content from points
+        function generateTcxContent(points) {
+            // Generate a random ID for the activity
+            const activityId = `swimnav-${new Date().getTime()}`;
+            
+            // Calculate start and end times
+            let startTime = points[0].time || new Date();
+            let endTime = points[points.length - 1].time || new Date();
+            
+            // If no valid timestamps were found, generate them
+            if (!points[0].time) {
+                console.warn("No valid timestamps found, generating them...");
+                // Assume a typical swimming pace of ~2 m/s between points
+                let currentTime = startTime;
+                
+                for (let i = 0; i < points.length; i++) {
+                    points[i].time = new Date(currentTime);
+                    
+                    // Calculate time to next point based on distance (if there is a next point)
+                    if (i < points.length - 1) {
+                        const distToNext = haversineDistance(
+                            points[i].lat, points[i].lon,
+                            points[i + 1].lat, points[i + 1].lon
+                        );
+                        
+                        // Estimate time in milliseconds (assuming ~2 m/s swimming speed)
+                        const timeToNext = (distToNext * 1000) / 2 * 1000;
+                        currentTime = new Date(currentTime.getTime() + timeToNext);
+                    }
+                }
+                
+                // Update end time
+                endTime = points[points.length - 1].time;
+            }
+            
+            // TCX XML header
+            let tcx = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            tcx += '<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" ';
+            tcx += 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ';
+            tcx += 'xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 ';
+            tcx += 'http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">\n';
+            
+            // Add activities
+            tcx += '  <Activities>\n';
+            tcx += '    <Activity Sport="Swimming">\n';
+            tcx += `      <Id>${startTime.toISOString()}</Id>\n`;
+            
+            // For now, add a single lap containing all points
+            // We'll improve this in the next step to handle multiple laps
+            tcx += '      <Lap StartTime="' + startTime.toISOString() + '">\n';
+            tcx += '        <TotalTimeSeconds>' + ((endTime - startTime) / 1000) + '</TotalTimeSeconds>\n';
+            
+            // Calculate total distance
+            let totalDistance = 0;
+            for (let i = 1; i < points.length; i++) {
+                totalDistance += haversineDistance(
+                    points[i-1].lat, points[i-1].lon,
+                    points[i].lat, points[i].lon
+                );
+            }
+            
+            tcx += `        <DistanceMeters>${totalDistance * 1000}</DistanceMeters>\n`;
+            tcx += '        <Intensity>Active</Intensity>\n';
+            tcx += '        <TriggerMethod>Manual</TriggerMethod>\n';
+            
+            // Add track
+            tcx += '        <Track>\n';
+            
+            // Add trackpoints
+            for (const point of points) {
+                tcx += '          <Trackpoint>\n';
+                tcx += `            <Time>${point.time.toISOString()}</Time>\n`;
+                tcx += '            <Position>\n';
+                tcx += `              <LatitudeDegrees>${point.lat}</LatitudeDegrees>\n`;
+                tcx += `              <LongitudeDegrees>${point.lon}</LongitudeDegrees>\n`;
+                tcx += '            </Position>\n';
+                
+                // Add elevation if available
+                if (point.elevation !== undefined) {
+                    tcx += `            <AltitudeMeters>${point.elevation}</AltitudeMeters>\n`;
+                }
+                
+                // Add power (efficiency) if available
+                if (point.power !== undefined) {
+                    tcx += `            <Extensions>\n`;
+                    tcx += `              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n`;
+                    tcx += `                <Watts>${Math.round(point.power)}</Watts>\n`;
+                    tcx += `              </TPX>\n`;
+                    tcx += `            </Extensions>\n`;
+                }
+                
+                tcx += '          </Trackpoint>\n';
+            }
+            
+            // Close track
+            tcx += '        </Track>\n';
+            
+            // Close lap
+            tcx += '      </Lap>\n';
+            
+            // Close activity
+            tcx += '    </Activity>\n';
+            tcx += '  </Activities>\n';
+            
+            // Add creator info
+            tcx += '  <Author xsi:type="Application_t">\n';
+            tcx += '    <Name>SwimNav</Name>\n';
+            tcx += '    <Build>\n';
+            tcx += '      <Version>\n';
+            tcx += '        <VersionMajor>1</VersionMajor>\n';
+            tcx += '        <VersionMinor>0</VersionMinor>\n';
+            tcx += '      </Version>\n';
+            tcx += '    </Build>\n';
+            tcx += '    <LangID>en</LangID>\n';
+            tcx += '    <PartNumber>000-00000-00</PartNumber>\n';
+            tcx += '  </Author>\n';
+            
+            // Close TCX
+            tcx += '</TrainingCenterDatabase>';
+            
+            return tcx;
+        }
+        
+        // Test function to create and download a TCX file
+        function testTcxFileDownload() {
+            try {
+                console.log("Testing TCX file creation and download");
+                
+                // Create some test GPS data
+                const testCsv = `# Test CSV data
+        time,lat,lon,elevation,efficiency
+        2023-01-01T12:00:00Z,42.540340,-83.214491,100,25
+        2023-01-01T12:01:00Z,42.541000,-83.214600,102,27
+        2023-01-01T12:02:00Z,42.542000,-83.214700,103,28
+        2023-01-01T12:03:00Z,42.543000,-83.214800,101,26
+        2023-01-01T12:04:00Z,42.544000,-83.214900,100,25`;
+                
+                // Create TCX file
+                const tcxContent = createTcxFromCsv(testCsv);
+                
+                if (!tcxContent) {
+                    console.error("Failed to create TCX file");
+                    return false;
+                }
+                
+                // Create a Blob from the TCX content
+                const blob = new Blob([tcxContent], { type: 'application/vnd.garmin.tcx+xml' });
+                
+                // Create a download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "test.tcx";
+                
+                // Trigger the download
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log("Test TCX file download initiated");
+                return true;
+            } catch (error) {
+                console.error("Error creating or downloading TCX file:", error);
+                return false;
+            }
+        }        
         
         // Function to display track on map
         function displayTrack(trackData) {
