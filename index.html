@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 9:57</title>
+    <title>SwimNav Control 05/04 10:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1958,6 +1958,8 @@ async function disconnect() {
                 // Find optional column indices
                 const efficiencyIndex = headers.findIndex(h => h === 'efficiency' || h === 'efficiency_metric');
                 const elevationIndex = headers.findIndex(h => h === 'ele' || h === 'elevation' || h === 'altitude');
+                // Add leg index to track navigation legs
+                const legIndex = headers.findIndex(h => h === 'leg');
                 
                 if (latIndex === -1 || lonIndex === -1) {
                     console.error("Latitude and longitude columns not found in CSV");
@@ -2022,6 +2024,13 @@ async function disconnect() {
                             if (!isNaN(efficiency)) {
                                 point.power = efficiency;
                             }
+                        }
+                        
+                        // Add leg information if available
+                        if (legIndex !== -1 && values[legIndex] !== undefined) {
+                            // Store leg value as integer if possible, or as string otherwise
+                            const legValue = values[legIndex].trim();
+                            point.leg = !isNaN(parseInt(legValue)) ? parseInt(legValue) : legValue;
                         }
                         
                         points.push(point);
