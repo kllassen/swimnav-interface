@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 10:30</title>
+    <title>SwimNav Control 05/04 10:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1911,7 +1911,7 @@ async function disconnect() {
             try {
                 console.log("Creating TCX file from CSV data");
                 
-                // Parse the CSV data to extract track points
+                // Parse the CSV data to extract track points with leg information
                 const points = parseGpsPoints(csvData);
                 
                 if (!points || points.length === 0) {
@@ -1919,10 +1919,18 @@ async function disconnect() {
                     return null;
                 }
                 
-                // Create TCX content
+                // Count the number of laps (unique leg values)
+                const uniqueLegs = new Set();
+                points.forEach(point => {
+                    if (point.leg !== undefined) {
+                        uniqueLegs.add(point.leg);
+                    }
+                });
+                
+                // Create TCX content with lap divisions based on leg values
                 const tcxContent = generateTcxContent(points);
                 
-                console.log(`Created TCX file with ${points.length} track points`);
+                console.log(`Created TCX file with ${points.length} track points across ${uniqueLegs.size} laps`);
                 return tcxContent;
             } catch (error) {
                 console.error("Error creating TCX file:", error);
