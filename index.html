@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 11:55</title>
+    <title>SwimNav Control 05/04 12:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1196,7 +1196,7 @@ async function disconnect() {
                     
                     // Prepare base filename (without extension)
                     let baseFilename = session.filename.startsWith('/') ? 
-                                      session.filename.substring(1) : session.filename;
+                                    session.filename.substring(1) : session.filename;
                     
                     // Remove any existing extension to get clean base name
                     baseFilename = baseFilename.replace(/\.[^/.]+$/, "");
@@ -1214,10 +1214,17 @@ async function disconnect() {
                     
                     console.log(`CSV file ${baseFilename}.csv saved successfully`);
                     
-                    // Generate TCX from the CSV data
+                    // Generate TCX from the CSV data - with added debugging
+                    console.log("Starting TCX generation...");
                     const tcxContent = createTcxFromCsv(processedData);
+                    console.log("TCX content generated:", tcxContent ? "success" : "failed");
+                    
                     if (tcxContent) {
+                        // Add a small delay before downloading the TCX file
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+                        
                         // Download TCX file
+                        console.log("Downloading TCX file...");
                         downloadTcxFile(tcxContent, baseFilename + '.tcx');
                     } else {
                         console.error("Failed to create TCX file from CSV data");
@@ -1242,7 +1249,6 @@ async function disconnect() {
                 updateDownloadStatus('Downloads complete!');
             }
         }
-
         
             function saveLogData(filename) {
                 // Create metadata header with both filenames
