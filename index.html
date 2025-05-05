@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 10:35</title>
+    <title>SwimNav Control 05/04 10:39</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -2259,6 +2259,42 @@ async function disconnect() {
             }
         }  
 
+        // Function to download TCX file
+        function downloadTcxFile(tcxContent, filename) {
+            try {
+                if (!tcxContent) {
+                    console.error("No TCX content to download");
+                    return false;
+                }
+                
+                // Create filename if not provided
+                if (!filename) {
+                    const now = new Date();
+                    const dateStr = now.toISOString().replace(/[:\-T]/g, '').split('.')[0];
+                    filename = `swimnav_${dateStr}.tcx`;
+                } else if (!filename.toLowerCase().endsWith('.tcx')) {
+                    filename += '.tcx';
+                }
+                
+                // Create blob and trigger download
+                const blob = new Blob([tcxContent], { type: 'application/vnd.garmin.tcx+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log(`TCX file "${filename}" downloaded successfully`);
+                return true;
+            } catch (error) {
+                console.error("Error downloading TCX file:", error);
+                return false;
+            }
+        }
+        
         // New test function with more realistic data and lap support
         function testRealisticTcxWithLaps() {
             try {
