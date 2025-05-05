@@ -2079,6 +2079,30 @@ async function disconnect() {
                 endTime = points[points.length - 1].time;
             }
             
+            // Find lap boundaries based on leg values
+            const lapBoundaries = [];
+            let currentLeg = undefined;
+            
+            // Identify where leg changes occur
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                if (point.leg !== undefined && point.leg !== currentLeg) {
+                    // Record the index where the leg changes
+                    lapBoundaries.push(i);
+                    currentLeg = point.leg;
+                }
+            }
+            
+            // If no leg changes were found, treat the whole activity as one lap
+            if (lapBoundaries.length === 0 || lapBoundaries[0] !== 0) {
+                lapBoundaries.unshift(0);
+            }
+            
+            // Add an end boundary if the last boundary isn't at the end
+            if (lapBoundaries[lapBoundaries.length - 1] !== points.length - 1) {
+                lapBoundaries.push(points.length - 1);
+            }
+            
             // TCX XML header
             let tcx = '<?xml version="1.0" encoding="UTF-8"?>\n';
             tcx += '<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" ';
@@ -2091,58 +2115,73 @@ async function disconnect() {
             tcx += '    <Activity Sport="Swimming">\n';
             tcx += `      <Id>${startTime.toISOString()}</Id>\n`;
             
-            // For now, add a single lap containing all points
-            // We'll improve this in the next step to handle multiple laps
-            tcx += '      <Lap StartTime="' + startTime.toISOString() + '">\n';
-            tcx += '        <TotalTimeSeconds>' + ((endTime - startTime) / 1000) + '</TotalTimeSeconds>\n';
-            
-            // Calculate total distance
-            let totalDistance = 0;
-            for (let i = 1; i < points.length; i++) {
-                totalDistance += haversineDistance(
-                    points[i-1].lat, points[i-1].lon,
-                    points[i].lat, points[i].lon
-                );
-            }
-            
-            tcx += `        <DistanceMeters>${totalDistance * 1000}</DistanceMeters>\n`;
-            tcx += '        <Intensity>Active</Intensity>\n';
-            tcx += '        <TriggerMethod>Manual</TriggerMethod>\n';
-            
-            // Add track
-            tcx += '        <Track>\n';
-            
-            // Add trackpoints
-            for (const point of points) {
-                tcx += '          <Trackpoint>\n';
-                tcx += `            <Time>${point.time.toISOString()}</Time>\n`;
-                tcx += '            <Position>\n';
-                tcx += `              <LatitudeDegrees>${point.lat}</LatitudeDegrees>\n`;
-                tcx += `              <LongitudeDegrees>${point.lon}</LongitudeDegrees>\n`;
-                tcx += '            </Position>\n';
+            // Create laps based on leg boundaries
+            for (let lapIndex = 0; lapIndex < lapBoundaries.length - 1; lapIndex++) {
+                const startIdx = lapBoundaries[lapIndex];
+                const endIdx = lapBoundaries[lapIndex + 1];
                 
-                // Add elevation if available
-                if (point.elevation !== undefined) {
-                    tcx += `            <AltitudeMeters>${point.elevation}</AltitudeMeters>\n`;
+                // Skip empty laps
+                if (startIdx >= endIdx) continue;
+                
+                const lapStartTime = points[startIdx].time;
+                const lapEndTime = points[endIdx].time;
+                const lapDuration = (lapEndTime - lapStartTime) / 1000; // in seconds
+                
+                // Calculate lap distance
+                let lapDistance = 0;
+                for (let i = startIdx + 1; i <= endIdx; i++) {
+                    lapDistance += haversineDistance(
+                        points[i-1].lat, points[i-1].lon,
+                        points[i].lat, points[i].lon
+                    );
                 }
                 
-                // Add power (efficiency) if available
-                if (point.power !== undefined) {
-                    tcx += `            <Extensions>\n`;
-                    tcx += `              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n`;
-                    tcx += `                <Watts>${Math.round(point.power)}</Watts>\n`;
-                    tcx += `              </TPX>\n`;
-                    tcx += `            </Extensions>\n`;
+                // Convert distance to meters
+                lapDistance = lapDistance * 1000;
+                
+                // Start lap element
+                tcx += `      <Lap StartTime="${lapStartTime.toISOString()}">\n`;
+                tcx += `        <TotalTimeSeconds>${lapDuration}</TotalTimeSeconds>\n`;
+                tcx += `        <DistanceMeters>${lapDistance}</DistanceMeters>\n`;
+                tcx += '        <Intensity>Active</Intensity>\n';
+                tcx += '        <TriggerMethod>Manual</TriggerMethod>\n';
+                
+                // Add track
+                tcx += '        <Track>\n';
+                
+                // Add trackpoints for this lap
+                for (let i = startIdx; i <= endIdx; i++) {
+                    const point = points[i];
+                    tcx += '          <Trackpoint>\n';
+                    tcx += `            <Time>${point.time.toISOString()}</Time>\n`;
+                    tcx += '            <Position>\n';
+                    tcx += `              <LatitudeDegrees>${point.lat}</LatitudeDegrees>\n`;
+                    tcx += `              <LongitudeDegrees>${point.lon}</LongitudeDegrees>\n`;
+                    tcx += '            </Position>\n';
+                    
+                    // Add elevation if available
+                    if (point.elevation !== undefined) {
+                        tcx += `            <AltitudeMeters>${point.elevation}</AltitudeMeters>\n`;
+                    }
+                    
+                    // Add power (efficiency) if available
+                    if (point.power !== undefined) {
+                        tcx += `            <Extensions>\n`;
+                        tcx += `              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n`;
+                        tcx += `                <Watts>${Math.round(point.power)}</Watts>\n`;
+                        tcx += `              </TPX>\n`;
+                        tcx += `            </Extensions>\n`;
+                    }
+                    
+                    tcx += '          </Trackpoint>\n';
                 }
                 
-                tcx += '          </Trackpoint>\n';
+                // Close track
+                tcx += '        </Track>\n';
+                
+                // Close lap
+                tcx += '      </Lap>\n';
             }
-            
-            // Close track
-            tcx += '        </Track>\n';
-            
-            // Close lap
-            tcx += '      </Lap>\n';
             
             // Close activity
             tcx += '    </Activity>\n';
