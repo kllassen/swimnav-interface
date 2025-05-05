@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 11:10</title>
+    <title>SwimNav Control 05/04 11:55</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1971,19 +1971,37 @@ async function disconnect() {
                     return [];
                 }
                 
-                // Parse header to find column indices
-                const headers = lines[headerLine].split(',').map(h => h.trim().toLowerCase());
+                // Parse header to find column indices - make lowercase for case-insensitive matching
+                const headers = lines[headerLine].split(',').map(h => h.trim());
                 
-                // Find required column indices
-                const latIndex = headers.findIndex(h => h === 'lat' || h === 'latitude');
-                const lonIndex = headers.findIndex(h => h === 'lon' || h === 'lng' || h === 'longitude');
-                const timeIndex = headers.findIndex(h => h === 'time' || h === 'timestamp');
+                // Find required column indices - use toLowerCase() for case-insensitive matching
+                const latIndex = headers.findIndex(h => 
+                    h.toLowerCase() === 'lat' || h.toLowerCase() === 'latitude');
+                const lonIndex = headers.findIndex(h => 
+                    h.toLowerCase() === 'lon' || h.toLowerCase() === 'lng' || 
+                    h.toLowerCase() === 'longitude');
+                const timeIndex = headers.findIndex(h => 
+                    h.toLowerCase() === 'time' || h.toLowerCase() === 'timestamp');
                 
-                // Find optional column indices
-                const efficiencyIndex = headers.findIndex(h => h === 'efficiency' || h === 'efficiency_metric');
-                const elevationIndex = headers.findIndex(h => h === 'ele' || h === 'elevation' || h === 'altitude');
+                // Find optional column indices - use toLowerCase() for case-insensitive matching
+                const efficiencyIndex = headers.findIndex(h => 
+                    h.toLowerCase() === 'efficiency' || 
+                    h.toLowerCase() === 'efficiency(%)' ||
+                    h.toLowerCase() === 'efficiency_metric');
+                const elevationIndex = headers.findIndex(h => 
+                    h.toLowerCase() === 'ele' || h.toLowerCase() === 'elevation' || 
+                    h.toLowerCase() === 'altitude');
                 // Add leg index to track navigation legs
-                const legIndex = headers.findIndex(h => h === 'leg');
+                const legIndex = headers.findIndex(h => h.toLowerCase() === 'leg');
+                
+                console.log("Column indices found:", {
+                    lat: latIndex,
+                    lon: lonIndex,
+                    time: timeIndex,
+                    efficiency: efficiencyIndex,
+                    elevation: elevationIndex,
+                    leg: legIndex
+                });
                 
                 if (latIndex === -1 || lonIndex === -1) {
                     console.error("Latitude and longitude columns not found in CSV");
@@ -2033,14 +2051,6 @@ async function disconnect() {
                                 console.warn("Could not parse time:", values[timeIndex]);
                             }
                         }
-                        
-                        // Add elevation if available
-                        //if (elevationIndex !== -1 && values[elevationIndex]) {
-                        //    const elevation = parseFloat(values[elevationIndex]);
-                        //    if (!isNaN(elevation)) {
-                        //        point.elevation = elevation;
-                        //    }
-                        //}
                         
                         // Add efficiency (as power) if available
                         if (efficiencyIndex !== -1 && values[efficiencyIndex]) {
