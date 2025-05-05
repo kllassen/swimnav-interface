@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 10:39</title>
+    <title>SwimNav Control 05/04 10:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1194,22 +1194,38 @@ async function disconnect() {
                     // Combine metadata with the downloaded data
                     const processedData = metadata + downloadBuffer;
                     
-                    // Save the file
-                    const blob = new Blob([processedData], { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = session.filename.startsWith('/') ? 
-                                session.filename.substring(1) : session.filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    // Prepare base filename (without extension)
+                    let baseFilename = session.filename.startsWith('/') ? 
+                                      session.filename.substring(1) : session.filename;
                     
-                    console.log(`File ${session.filename} saved successfully`);
+                    // Remove any existing extension to get clean base name
+                    baseFilename = baseFilename.replace(/\.[^/.]+$/, "");
+                    
+                    // Save CSV file
+                    const csvBlob = new Blob([processedData], { type: 'text/csv' });
+                    const csvUrl = URL.createObjectURL(csvBlob);
+                    const csvLink = document.createElement('a');
+                    csvLink.href = csvUrl;
+                    csvLink.download = baseFilename + '.csv';
+                    document.body.appendChild(csvLink);
+                    csvLink.click();
+                    document.body.removeChild(csvLink);
+                    URL.revokeObjectURL(csvUrl);
+                    
+                    console.log(`CSV file ${baseFilename}.csv saved successfully`);
+                    
+                    // Generate TCX from the CSV data
+                    const tcxContent = createTcxFromCsv(processedData);
+                    if (tcxContent) {
+                        // Download TCX file
+                        downloadTcxFile(tcxContent, baseFilename + '.tcx');
+                    } else {
+                        console.error("Failed to create TCX file from CSV data");
+                    }
+                    
                 } catch (error) {
-                    console.error('Error saving file:', error);
-                    updateDownloadStatus(`Error saving file: ${error.message}`);
+                    console.error('Error saving files:', error);
+                    updateDownloadStatus(`Error saving files: ${error.message}`);
                 }
             } else {
                 console.warn('No data received or session information missing');
