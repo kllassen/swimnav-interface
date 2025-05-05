@@ -2035,12 +2035,12 @@ async function disconnect() {
                         }
                         
                         // Add elevation if available
-                        if (elevationIndex !== -1 && values[elevationIndex]) {
-                            const elevation = parseFloat(values[elevationIndex]);
-                            if (!isNaN(elevation)) {
-                                point.elevation = elevation;
-                            }
-                        }
+                        //if (elevationIndex !== -1 && values[elevationIndex]) {
+                        //    const elevation = parseFloat(values[elevationIndex]);
+                        //    if (!isNaN(elevation)) {
+                        //        point.elevation = elevation;
+                        //    }
+                        //}
                         
                         // Add efficiency (as power) if available
                         if (efficiencyIndex !== -1 && values[efficiencyIndex]) {
@@ -2184,9 +2184,9 @@ async function disconnect() {
                     tcx += '            </Position>\n';
                     
                     // Add elevation if available
-                    if (point.elevation !== undefined) {
-                        tcx += `            <AltitudeMeters>${point.elevation}</AltitudeMeters>\n`;
-                    }
+                    //if (point.elevation !== undefined) {
+                    //    tcx += `            <AltitudeMeters>${point.elevation}</AltitudeMeters>\n`;
+                    //}
                     
                     // Add power (efficiency) if available
                     if (point.power !== undefined) {
