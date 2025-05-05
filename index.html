@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav Control 05/04 12:21</title>
+    <title>SwimNav Control 05/04 12:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1214,21 +1214,18 @@ async function disconnect() {
                     
                     console.log(`CSV file ${baseFilename}.csv saved successfully`);
                     
-                    // Generate TCX from the CSV data - with added debugging
-                    console.log("Starting TCX generation...");
-                    const tcxContent = createTcxFromCsv(processedData);
-                    console.log("TCX content generated:", tcxContent ? "success" : "failed");
-                    
-                    if (tcxContent) {
-                        // Add a small delay before downloading the TCX file
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
-                        
-                        // Download TCX file
-                        console.log("Downloading TCX file...");
-                        downloadTcxFile(tcxContent, baseFilename + '.tcx');
-                    } else {
-                        console.error("Failed to create TCX file from CSV data");
-                    }
+                    // Defer TCX generation to the next event loop tick
+                    setTimeout(() => {
+                        console.log("Starting TCX generation...");
+                        // Generate TCX from the CSV data
+                        const tcxContent = createTcxFromCsv(processedData);
+                        if (tcxContent) {
+                            // Download TCX file
+                            downloadTcxFile(tcxContent, baseFilename + '.tcx');
+                        } else {
+                            console.error("Failed to create TCX file from CSV data");
+                        }
+                    }, 0);
                     
                 } catch (error) {
                     console.error('Error saving files:', error);
