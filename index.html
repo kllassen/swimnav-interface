@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/05 8:45</title>
+    <title>SwimNav 05/05 8:58</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1214,19 +1214,30 @@ async function disconnect() {
                     
                     console.log(`CSV file ${baseFilename}.csv saved successfully`);
                     
-                    // Show TCX export dialog after CSV download
+                    // Store data for TCX creation and use a longer timeout
+                    const savedData = processedData;
+                    const savedFilename = baseFilename;
+                    
+                    // Show TCX export dialog after a longer delay
                     setTimeout(() => {
-                        if (confirm('Would you like to create a TCX file of this swim session?')) {
-                            console.log("Creating TCX file...");
-                            const tcxContent = createTcxFromCsv(processedData);
-                            
-                            if (tcxContent) {
-                                downloadTcxFile(tcxContent, baseFilename + '.tcx');
+                        try {
+                            console.log("Showing TCX dialog...");
+                            if (confirm('Would you like to create a TCX file of this swim session?')) {
+                                console.log("User confirmed TCX creation");
+                                const tcxContent = createTcxFromCsv(savedData);
+                                
+                                if (tcxContent) {
+                                    downloadTcxFile(tcxContent, savedFilename + '.tcx');
+                                } else {
+                                    alert("Failed to create TCX file from the session data.");
+                                }
                             } else {
-                                alert("Failed to create TCX file from the session data.");
+                                console.log("User declined TCX creation");
                             }
+                        } catch (dialogError) {
+                            console.error("Error in TCX dialog:", dialogError);
                         }
-                    }, 500);
+                    }, 1000); // Use a longer timeout of 1 second
                     
                 } catch (error) {
                     console.error('Error saving files:', error);
@@ -1241,7 +1252,10 @@ async function disconnect() {
             
             // Only continue if there are more selected sessions to download
             if (currentDownloadIndex < availableSessions.length) {
-                await requestNextSession(availableSessions);
+                // Use setTimeout to give the browser time to process the download
+                setTimeout(() => {
+                    requestNextSession(availableSessions);
+                }, 1500);
             } else {
                 isDownloading = false;
                 updateDownloadStatus('Downloads complete!');
