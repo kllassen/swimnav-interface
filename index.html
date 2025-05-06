@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/05 9:40</title>
+    <title>SwimNav 05/05 9:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -757,31 +757,42 @@ async function connect() {
     }
 }
 
-async function disconnect() {
-    if (bleDevice) {
-        await bleDevice.gatt.disconnect();
-    }
-    
-    // Update both tabs
-    document.getElementById('bleStatus').textContent = 'Status: Disconnected';
-    document.getElementById('bleStatusData').textContent = 'Status: Disconnected';
-    
-    document.getElementById('connectBtn').textContent = 'Connect';
-    document.getElementById('connectBtnData').textContent = 'Connect';
-    
-    document.getElementById('connectBtn').onclick = connect;
-    document.getElementById('connectBtnData').onclick = connect;
-    
-    setControlsState(false);
-    waypoints = [];
-    updateWaypointsList();
-
-    // Show the loading placeholder again
-    const placeholder = document.getElementById('map-loading-placeholder');
-    if (placeholder) {
-        placeholder.style.display = 'flex';
-    }
-}
+        async function disconnect() {
+            if (bleDevice) {
+                await bleDevice.gatt.disconnect();
+            }
+            
+            // Update both tabs
+            document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+            document.getElementById('bleStatusData').textContent = 'Status: Disconnected';
+            
+            document.getElementById('connectBtn').textContent = 'Connect';
+            document.getElementById('connectBtnData').textContent = 'Connect';
+            
+            document.getElementById('connectBtn').onclick = connect;
+            document.getElementById('connectBtnData').onclick = connect;
+            
+            setControlsState(false);
+            waypoints = [];
+            updateWaypointsList();
+        
+            // Reset TCX cache variables
+            lastDownloadedData = '';
+            lastDownloadedFilename = '';
+            hasCachedDownload = false;
+        
+            // Disable TCX button
+            const tcxButton = document.getElementById('createTcxBtn');
+            if (tcxButton) {
+                tcxButton.disabled = true;
+            }
+        
+            // Show the loading placeholder again
+            const placeholder = document.getElementById('map-loading-placeholder');
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+            }
+        }
         
         async function handleData(event) {
             const value = event.target.value;
@@ -1233,10 +1244,10 @@ async function disconnect() {
                     lastDownloadedFilename = baseFilename;
                     hasCachedDownload = true;
                     
-                    // Show the TCX button
+                    // Enable the TCX button
                     const tcxButton = document.getElementById('createTcxBtn');
                     if (tcxButton) {
-                        tcxButton.style.display = 'block';
+                        tcxButton.disabled = false;
                         updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
                     }
                     
