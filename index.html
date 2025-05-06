@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/04 12:35</title>
+    <title>SwimNav 05/05 8:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1214,15 +1214,19 @@ async function disconnect() {
                     
                     console.log(`CSV file ${baseFilename}.csv saved successfully`);
                     
-                    // Generate TCX from the CSV data
-                    console.log("Starting TCX generation...");
-                    const tcxContent = createTcxFromCsv(processedData);
-                    if (tcxContent) {
-                        // Download TCX file
-                        downloadTcxFile(tcxContent, baseFilename + '.tcx');
-                    } else {
-                        console.error("Failed to create TCX file from CSV data");
-                    }
+                    // Show TCX export dialog after CSV download
+                    setTimeout(() => {
+                        if (confirm('Would you like to create a TCX file of this swim session?')) {
+                            console.log("Creating TCX file...");
+                            const tcxContent = createTcxFromCsv(processedData);
+                            
+                            if (tcxContent) {
+                                downloadTcxFile(tcxContent, baseFilename + '.tcx');
+                            } else {
+                                alert("Failed to create TCX file from the session data.");
+                            }
+                        }
+                    }, 500);
                     
                 } catch (error) {
                     console.error('Error saving files:', error);
