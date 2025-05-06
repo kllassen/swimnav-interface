@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/05 9:36</title>
+    <title>SwimNav 05/05 9:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -692,6 +692,12 @@
             const trackLoaded = trackPoints.length > 0;
             document.getElementById('toggleTrackBtn').disabled = !enabled || !trackLoaded;
             document.getElementById('clearTrackBtn').disabled = !enabled || !trackLoaded;
+            
+            // TCX button - only enable if connected AND has cached data
+            const tcxButton = document.getElementById('createTcxBtn');
+            if (tcxButton) {
+                tcxButton.disabled = !enabled || !hasCachedDownload;
+            }
         }
 
 async function connect() {
