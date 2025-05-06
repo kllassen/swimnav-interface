@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/05 9:25</title>
+    <title>SwimNav 05/05 9:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -2330,6 +2330,40 @@ async function disconnect() {
             } catch (error) {
                 console.error("Error downloading TCX file:", error);
                 return false;
+            }
+        }
+
+        function createTcxFromLastDownload() {
+            console.log("Create TCX button clicked");
+            
+            // Check if we have cached data
+            if (!hasCachedDownload || !lastDownloadedData) {
+                console.error("No cached download data available for TCX creation");
+                alert("No swim data available. Please download a swim session first.");
+                return;
+            }
+            
+            try {
+                console.log("Creating TCX file from cached data...");
+                updateDownloadStatus("Creating TCX file...");
+                
+                // Generate TCX content
+                const tcxContent = createTcxFromCsv(lastDownloadedData);
+                
+                if (tcxContent) {
+                    // Download the TCX file
+                    downloadTcxFile(tcxContent, lastDownloadedFilename + '.tcx');
+                    console.log("TCX file created and download initiated");
+                    updateDownloadStatus("TCX file created successfully.");
+                } else {
+                    console.error("Failed to create TCX content");
+                    alert("Failed to create TCX file from the session data.");
+                    updateDownloadStatus("Failed to create TCX file.");
+                }
+            } catch (error) {
+                console.error("Error creating TCX file:", error);
+                alert("Error creating TCX file: " + error.message);
+                updateDownloadStatus("Error creating TCX file: " + error.message);
             }
         }
         
