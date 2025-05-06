@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/05 9:20</title>
+    <title>SwimNav 05/05 9:25</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1222,30 +1222,17 @@ async function disconnect() {
                     
                     console.log(`CSV file ${baseFilename}.csv saved successfully`);
                     
-                    // Store data for TCX creation and use a longer timeout
-                    const savedData = processedData;
-                    const savedFilename = baseFilename;
+                    // Cache the data for TCX creation
+                    lastDownloadedData = processedData;
+                    lastDownloadedFilename = baseFilename;
+                    hasCachedDownload = true;
                     
-                    // Show TCX export dialog after a longer delay
-                    setTimeout(() => {
-                        try {
-                            console.log("Showing TCX dialog...");
-                            if (confirm('Would you like to create a TCX file of this swim session?')) {
-                                console.log("User confirmed TCX creation");
-                                const tcxContent = createTcxFromCsv(savedData);
-                                
-                                if (tcxContent) {
-                                    downloadTcxFile(tcxContent, savedFilename + '.tcx');
-                                } else {
-                                    alert("Failed to create TCX file from the session data.");
-                                }
-                            } else {
-                                console.log("User declined TCX creation");
-                            }
-                        } catch (dialogError) {
-                            console.error("Error in TCX dialog:", dialogError);
-                        }
-                    }, 1000); // Use a longer timeout of 1 second
+                    // Show the TCX button
+                    const tcxButton = document.getElementById('createTcxBtn');
+                    if (tcxButton) {
+                        tcxButton.style.display = 'block';
+                        updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
+                    }
                     
                 } catch (error) {
                     console.error('Error saving files:', error);
@@ -1260,13 +1247,12 @@ async function disconnect() {
             
             // Only continue if there are more selected sessions to download
             if (currentDownloadIndex < availableSessions.length) {
-                // Use setTimeout to give the browser time to process the download
-                setTimeout(() => {
-                    requestNextSession(availableSessions);
-                }, 1500);
+                await requestNextSession(availableSessions);
             } else {
                 isDownloading = false;
-                updateDownloadStatus('Downloads complete!');
+                if (!hasCachedDownload) {
+                    updateDownloadStatus('Downloads complete!');
+                }
             }
         }
         
