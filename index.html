@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/05 9:55</title>
+    <title>SwimNav 05/07 5:31</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1239,23 +1239,23 @@ async function connect() {
                     csvLink.href = csvUrl;
                     csvLink.download = baseFilename + '.csv';
                     document.body.appendChild(csvLink);
-                    csvLink.click();
-                    document.body.removeChild(csvLink);
-                    URL.revokeObjectURL(csvUrl);
                     
-                    console.log(`CSV file ${baseFilename}.csv saved successfully`);
-                    
-                    // Cache the data for TCX creation
+                    // ✅ Cache data and enable button first
                     lastDownloadedData = processedData;
                     lastDownloadedFilename = baseFilename;
                     hasCachedDownload = true;
                     
-                    // Enable the TCX button
                     const tcxButton = document.getElementById('createTcxBtn');
                     if (tcxButton) {
                         tcxButton.disabled = false;
                         updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
                     }
+                    
+                    // ✅ Trigger download last
+                    csvLink.click(); // 👈 Move this line here
+                    document.body.removeChild(csvLink);
+                    URL.revokeObjectURL(csvUrl);
+                    console.log(`CSV file ${baseFilename}.csv saved successfully`);
                     
                 } catch (error) {
                     console.error('Error saving files:', error);
