@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 5:31</title>
+    <title>SwimNav 05/07 6:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1248,6 +1248,7 @@ async function connect() {
                     const tcxButton = document.getElementById('createTcxBtn');
                     if (tcxButton) {
                         tcxButton.disabled = false;
+                        console.log("TCX button disabled state after enabling:", tcxButton.disabled);
                         updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
                     }
                     
