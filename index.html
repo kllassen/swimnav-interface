@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 10:18</title>
+    <title>SwimNav 05/07 10:33</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1730,6 +1730,19 @@ async function connect() {
                 
                 console.log(`File saved as ${saveFilename}`);
                 console.log(`processCompletedTransfer`);
+
+                // Cache data for TCX creation
+                lastDownloadedData = fullData;
+                lastDownloadedFilename = saveFilename.replace(/\.[^/.]+$/, ""); // Remove file extension
+                hasCachedDownload = true;
+                
+                // Enable TCX button
+                const tcxButton = document.getElementById('createTcxBtn');
+                if (tcxButton) {
+                    tcxButton.disabled = false;
+                    console.log("TCX button enabled");
+                    updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
+                }
                 
                 // Reset file transfer state
                 fileTransfer.active = false;
