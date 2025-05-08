@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 11:30</title>
+    <title>SwimNav 05/07 11:50</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1466,7 +1466,8 @@ async function connect() {
         }
 
         function downloadSelectedSessions() {
-            const selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
+            // Make sure we're using the global selectedSessions array
+            selectedSessions = Array.from(document.querySelectorAll('.session-item input[type="checkbox"]:checked'))
                 .map(checkbox => {
                     return availableSessions.find(s => s.filename === checkbox.dataset.filename);
                 });
@@ -1476,15 +1477,29 @@ async function connect() {
                 return;
             }
         
-            // Get only the FIRST selected session to prevent downloading all
-            const sessionToDownload = selectedSessions[0];
-        
-            console.log(`Starting download for: ${sessionToDownload.filename}`);
+            console.log(`User selected ${selectedSessions.length} files for download`);
+            
+            // Reset the index to start with the first file
+            currentDownloadIndex = 0;
+            
+            // Add more detailed logging
+            console.log(`Starting multi-file download. Files selected: ${selectedSessions.length}`);
+            for (let i = 0; i < selectedSessions.length; i++) {
+                console.log(`  File ${i+1}: ${selectedSessions[i].filename}, size: ${selectedSessions[i].size}`);
+            }
         
             cancelSessionDialog();
+            
+            // Update status to show we're doing a multi-file download
+            if (selectedSessions.length > 1) {
+                updateDownloadStatus(`Downloading ${selectedSessions.length} files (1/${selectedSessions.length})...`);
+            } else {
+                updateDownloadStatus(`Preparing to download ${selectedSessions[0].filename}...`);
+            }
+            
             isDownloading = true;
             downloadBuffer = '';
-            startDownloadingSingleSession(sessionToDownload);
+            startDownloadingSingleSession(selectedSessions[currentDownloadIndex]);
         }
         
         // New function to handle single session download
