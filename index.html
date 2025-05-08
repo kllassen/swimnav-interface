@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 8:05</title>
+    <title>SwimNav 05/07 8:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1207,6 +1207,7 @@ async function connect() {
             }
         }
         
+        /* This is Dead Code from TEXT file transfer attempt
         async function handleDownloadComplete() {
             const session = availableSessions[currentDownloadIndex];
             console.log('Download complete for session:', session);
@@ -1278,7 +1279,8 @@ async function connect() {
                     updateDownloadStatus('Downloads complete!');
                 }
             }
-        }
+        } 
+        */
         
             function saveLogData(filename) {
                 // Create metadata header with both filenames
@@ -1742,6 +1744,12 @@ async function connect() {
                 console.error('Error saving file:', error);
                 updateDownloadStatus(`Error saving file: ${error.message}`);
             }
+
+            const tcxButton = document.getElementById('createTcxBtn');
+            if (tcxButton) {
+                tcxButton.disabled = false;
+                console.log("TCX button disabled state after enabling:", tcxButton.disabled);
+            
         }
 
         // Add a confirmation dialog for deleting files
