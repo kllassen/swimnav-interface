@@ -539,13 +539,23 @@
         <div class="session-list" id="sessionList">
             <!-- Session items will be added here dynamically -->
         </div>
-    <div class="dialog-buttons" style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button onclick="cancelSessionDialog()">Cancel</button>
-        <button onclick="downloadSelectedSessions()">Download</button>
-        <button onclick="deleteSelectedSessions()" style="background-color: #dc3545;">Delete</button>
-    </div>
+        <div class="dialog-buttons" style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="cancelSessionDialog()">Cancel</button>
+            <button onclick="downloadSelectedSessions()">Download</button>
+            <button onclick="deleteSelectedSessions()" style="background-color: #dc3545;">Delete</button>
+        </div>
     </div>
 
+    <div class="overlay" id="tcxOverlay"></div>
+    <div class="session-dialog" id="tcxDialog">
+        <h2>Create TCX File</h2>
+        <p>Would you like to create a TCX file from this download for use with Strava?</p>
+        <div class="dialog-buttons" style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="cancelTcxDialog()">No</button>
+            <button onclick="createTcxFromDialog()" style="background-color: #28a745;">Yes</button>
+        </div>
+    </div>
+    
     <script>
         // File transfer command constants
         const FILE_XFER_START = 0xAD;  // Transfer start marker
