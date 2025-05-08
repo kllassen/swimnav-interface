@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 11:13</title>
+    <title>SwimNav 05/07 11:23</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -500,9 +500,6 @@
         
         <!-- Download button -->
         <button id="downloadBtn" onclick="downloadData()" disabled>Swim Data Management</button>
-        
-        <!-- TCX conversion button - disabled by default -->
-        <button id="createTcxBtn" onclick="createTcxFromLastDownload()" disabled style="background-color: #28a745; margin-top: 10px;">Create TCX from Last Download</button>
         
         <!-- Track Controls -->
         <div class="control">
@@ -1771,12 +1768,6 @@ async function connect() {
                 console.log("Showing TCX creation dialog");
                 updateDownloadStatus('CSV file downloaded successfully.');
                 showTcxDialog();
-                
-                // Still enable the button as a fallback option
-                const tcxButton = document.getElementById('createTcxBtn');
-                if (tcxButton) {
-                    tcxButton.disabled = false;
-                }
                 
                 // Reset file transfer state
                 fileTransfer.active = false;
