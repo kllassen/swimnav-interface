@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 8:48</title>
+    <title>SwimNav 05/07 10:18</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -834,6 +834,7 @@ async function connect() {
                 // Ignore decoding errors
             }
             
+            /* This is Dead Code from TEXT file transfer attempt
             // Handle file download protocol
             if (isDownloading || dataString.startsWith('START')) {
                 // Check for text markers
@@ -876,6 +877,7 @@ async function connect() {
                 
                 return; // Skip regular packet processing when in download mode
             }
+            */
             
             // Regular packets when not downloading
             console.log('Received regular packet type:', data[0].toString(16));
@@ -1744,14 +1746,6 @@ async function connect() {
                 console.error('Error saving file:', error);
                 updateDownloadStatus(`Error saving file: ${error.message}`);
             }
-
-            /* Turn on TCX button
-            const tcxButton = document.getElementById('createTcxBtn');
-            if (tcxButton) {
-                tcxButton.disabled = false;
-                console.log("TCX button disabled state after enabling:", tcxButton.disabled);
-            */
-            
         }
 
         // Add a confirmation dialog for deleting files
