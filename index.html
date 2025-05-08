@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 12:31</title>
+    <title>SwimNav 05/07 12:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -515,7 +515,7 @@
             
             <div style="display: flex; gap: 5px; margin-top: 10px;">
                 <button id="toggleTrackBtn" onclick="toggleTrackVisibility()" disabled style="width: 45%;">Show/Hide Track</button>
-                <button id="clearTrackBtn" onclick="clearTrack()" disabled style="width: 45%;">Clear Track</button>
+                <button id="clearTrackBtn" onclick="clearTrack(); document.getElementById('trackFileInput').value = '';" disabled style="width: 45%;">Clear Track</button>
             </div>
         </div>
     </div>  
@@ -2908,9 +2908,6 @@ async function connect() {
             trackPoints = [];
             currentTrackFile = '';
 
-            // NEW CODE: Reset the file input when Clear Track is clicked
-            document.getElementById('trackFileInput').value = '';      
-            
             // Update UI to show no track is displayed
             updateTrackUI(false);
         }
