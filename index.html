@@ -1379,6 +1379,27 @@ async function connect() {
             document.getElementById('sessionOverlay').style.display = 'none';
             document.getElementById('sessionDialog').style.display = 'none';
         }
+
+        // Function to show TCX dialog
+        function showTcxDialog() {
+            document.getElementById('tcxOverlay').style.display = 'block';
+            document.getElementById('tcxDialog').style.display = 'block';
+        }
+        
+        // Function to hide TCX dialog
+        function cancelTcxDialog() {
+            document.getElementById('tcxOverlay').style.display = 'none';
+            document.getElementById('tcxDialog').style.display = 'none';
+        }
+        
+        // Function to create TCX from dialog
+        function createTcxFromDialog() {
+            // Hide dialog first
+            cancelTcxDialog();
+            
+            // Then create TCX file using existing function
+            createTcxFromLastDownload();
+        }
         
         function saveToFile() {
             let filename = prompt("Enter a name for this configuration:", "swimnav-config");
