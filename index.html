@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 11:50</title>
+    <title>SwimNav 05/07 12:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -2907,6 +2907,12 @@ async function connect() {
             
             trackPoints = [];
             currentTrackFile = '';
+
+            // Reset the file input field
+            const fileInput = document.getElementById('trackFileInput');
+            if (fileInput) {
+                fileInput.value = '';
+            }
             
             // Update UI to show no track is displayed
             updateTrackUI(false);
