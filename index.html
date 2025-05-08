@@ -1767,12 +1767,15 @@ async function connect() {
                 lastDownloadedFilename = saveFilename.replace(/\.[^/.]+$/, ""); // Remove file extension
                 hasCachedDownload = true;
                 
-                // Enable TCX button
+                // Show TCX dialog instead of just enabling button
+                console.log("Showing TCX creation dialog");
+                updateDownloadStatus('CSV file downloaded successfully.');
+                showTcxDialog();
+                
+                // Still enable the button as a fallback option
                 const tcxButton = document.getElementById('createTcxBtn');
                 if (tcxButton) {
                     tcxButton.disabled = false;
-                    console.log("TCX button enabled");
-                    updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
                 }
                 
                 // Reset file transfer state
