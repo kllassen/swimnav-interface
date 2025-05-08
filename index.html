@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 6:05</title>
+    <title>SwimNav 05/07 8:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1725,6 +1725,7 @@ async function connect() {
                 URL.revokeObjectURL(url);
                 
                 console.log(`File saved as ${saveFilename}`);
+                console.log(`processCompletedTransfer`);
                 
                 // Reset file transfer state
                 fileTransfer.active = false;
