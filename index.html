@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/07 12:25</title>
+    <title>SwimNav 05/07 12:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1983,9 +1983,6 @@ async function connect() {
                 return;
             }
             
-            // Clear any existing track visualization WITHOUT clearing the file input
-            clearTrackVisualization();
-            
             loadTrackFile(file);
         }
         
@@ -2893,8 +2890,8 @@ async function connect() {
             return content;
         }
         
-        // New function that clears track visualization without clearing file input
-        function clearTrackVisualization() {
+        // Function to clear track from map
+        function clearTrack() {
             if (trackPath) {
                 trackPath.setMap(null);
                 trackPath = null;
@@ -2913,18 +2910,6 @@ async function connect() {
             
             // Update UI to show no track is displayed
             updateTrackUI(false);
-        } 
-        
-        // Function to clear track from map
-        function clearTrack() {
-            // First clear all visualization
-            clearTrackVisualization();
-            
-            // Then also clear the file input
-            const fileInput = document.getElementById('trackFileInput');
-            if (fileInput) {
-                fileInput.value = '';
-            }
         }
         
         // Toggle track visibility
