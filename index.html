@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/08 9:00</title>
+    <title>SwimNav 05/08 9:01</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -393,12 +393,19 @@
         <button class="tab-button" onclick="switchTab('dataMgt')">Data Mgt</button>
     </div>
     
+<!-- Course Tab Content -->
+<div id="courseTab" class="tab-content active">
+    <h1>SwimNav Course</h1>
+    <button id="connectBtnCourse" onclick="connect()">Connect to Device</button>
+    <div id="bleStatusCourse" class="control">Status: Disconnected</div>
+</div>
+
     <!-- Navigation Tab Content -->
-    <div id="navigationTab" class="tab-content active">
+    <div id="navigationTab" class="tab-content">
         <h1>SwimNav Control</h1>
         <button id="connectBtn" onclick="connect()">Connect to Device</button>
         <div id="bleStatus" class="control">Status: Disconnected</div>
-
+    
         <div class="control">
             <label>Error Cone (deg):</label>
             <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
@@ -420,7 +427,7 @@
                 <option value="20">20°</option>
             </select>
         </div>
-
+    
         <div class="control">
             <label>Waypoint Zone (meters):</label>
             <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
@@ -436,7 +443,7 @@
                 <option value="50">50m</option>
             </select>
         </div>
-
+    
         <div class="control">
             <label>Hysteresis Cone (deg):</label>
             <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
@@ -451,7 +458,7 @@
                 <option value="10">10°</option>
             </select>
         </div>
-
+    
         <div class="control">
             <label>Signal Triggers:</label>
             <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
@@ -462,7 +469,7 @@
                 <option value="5">5</option>
             </select>
         </div>
-
+    
         <div class="control">
             <label for="logOnly">Log Only Mode:</label>
             <input type="checkbox" id="logOnly" onchange="sendSetting('logOnly', this.checked ? 1 : 0)" disabled>
@@ -470,7 +477,7 @@
                 When enabled, navigation signals will be suppressed, but logging will continue as normal.
             </span>
         </div>
-
+    
         <div class="control">
             <label>Waypoint Coordinates:</label>
             <input type="text" 
@@ -484,7 +491,7 @@
             <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
             <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
         </div>
-
+    
         <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
         <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
         <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
@@ -519,7 +526,7 @@
                 <button id="clearTrackBtn" onclick="clearTrack(); document.getElementById('trackFileInput').value = '';" disabled style="width: 45%;">Clear Track</button>
             </div>
         </div>
-    </div>  
+    </div> 
 </div>
 
     <div class="main-content">
