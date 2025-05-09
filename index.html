@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/08 9:11</title>
+    <title>SwimNav 05/08 10:35</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -398,6 +398,31 @@
     <h1>SwimNav Course</h1>
     <button id="connectBtnCourse" onclick="connect()">Connect to Device</button>
     <div id="bleStatusCourse" class="control">Status: Disconnected</div>
+    
+    <!-- Moved waypoint controls -->
+    <div class="control">
+        <label>Waypoint Coordinates:</label>
+        <input type="text" 
+              id="wpCoords" 
+              placeholder="42.540340, -83.214491"
+              disabled>
+        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+            Click on map or enter coordinates in format: latitude, longitude
+        </div>
+        <div id="error-message" class="error-message"></div>
+        <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
+        <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
+    </div>
+
+    <!-- Moved waypoint buttons -->
+    <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
+    <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
+    <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
+    
+    <!-- Moved config buttons -->
+    <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
+    <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
+    <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
 </div>
 
     <!-- Navigation Tab Content -->
@@ -477,27 +502,6 @@
                 When enabled, navigation signals will be suppressed, but logging will continue as normal.
             </span>
         </div>
-    
-        <div class="control">
-            <label>Waypoint Coordinates:</label>
-            <input type="text" 
-                  id="wpCoords" 
-                  placeholder="42.540340, -83.214491"
-                  disabled>
-            <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
-                Click on map or enter coordinates in format: latitude, longitude
-            </div>
-            <div id="error-message" class="error-message"></div>
-            <div id="loading-message" class="loading-message" style="display: none;">Loading stored waypoints...</div>
-            <div id="waypoint-list" class="waypoint-list" style="display: none;"></div>
-        </div>
-    
-        <button id="addWpBtn" onclick="addWaypoint()" disabled>Add to List</button>
-        <button id="sendWpBtn" onclick="sendWaypoints()" disabled>Send All Waypoints</button>
-        <button id="clearWpBtn" onclick="clearWaypoints()" disabled>Clear List</button>
-        <button id="saveBtn" onclick="saveToFile()" disabled>Save Config</button>
-        <input type="file" id="loadFile" style="display: none" onchange="loadFromFile(this)">
-        <button id="loadBtn" onclick="document.getElementById('loadFile').click()" disabled>Load Config</button>
     </div>
     
     <!-- Swim Data Tab Content -->
