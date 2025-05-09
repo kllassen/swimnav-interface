@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/08 10:35</title>
+    <title>SwimNav 05/08 11:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -426,7 +426,7 @@
 </div>
 
     <!-- Navigation Tab Content -->
-    <div id="navigationTab" class="tab-content">
+    <div id="settingsTab" class="tab-content">
         <h1>SwimNav Control</h1>
         <button id="connectBtn" onclick="connect()">Connect to Device</button>
         <div id="bleStatus" class="control">Status: Disconnected</div>
@@ -3025,7 +3025,7 @@ async function connect() {
                 document.getElementById('courseTab').classList.add('active');
                 document.querySelectorAll('.tab-button')[0].classList.add('active');
             } else if (tabName === 'settings') {
-                document.getElementById('navigationTab').classList.add('active');
+                document.getElementById('settingsTab').classList.add('active');
                 document.querySelectorAll('.tab-button')[1].classList.add('active');
             } else if (tabName === 'dataMgt') {
                 document.getElementById('swimDataTab').classList.add('active');
