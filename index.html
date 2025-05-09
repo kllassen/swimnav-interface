@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/08 9:01</title>
+    <title>SwimNav 05/08 9:11</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -3017,12 +3017,15 @@ async function connect() {
             });
             
             // Activate the selected tab
-            if (tabName === 'navigation') {
-                document.getElementById('navigationTab').classList.add('active');
+            if (tabName === 'course') {
+                document.getElementById('courseTab').classList.add('active');
                 document.querySelectorAll('.tab-button')[0].classList.add('active');
-            } else if (tabName === 'swimData') {
-                document.getElementById('swimDataTab').classList.add('active');
+            } else if (tabName === 'settings') {
+                document.getElementById('navigationTab').classList.add('active');
                 document.querySelectorAll('.tab-button')[1].classList.add('active');
+            } else if (tabName === 'dataMgt') {
+                document.getElementById('swimDataTab').classList.add('active');
+                document.querySelectorAll('.tab-button')[2].classList.add('active');
             }
             
             // Trigger map resize if needed
