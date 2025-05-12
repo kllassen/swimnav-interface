@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 9:05</title>
+    <title>SwimNav 05/11 9:10</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -788,8 +788,11 @@
             try {
                 console.log('Requesting device...');
                 document.getElementById('bleStatus').textContent = 'Status: Connecting...';
+                document.getElementById('bleStatus').className = 'control connecting';
                 document.getElementById('bleStatusData').textContent = 'Status: Connecting...';
-                document.getElementById('bleStatusCourse').textContent = 'Status: Connecting...'; // Add this line
+                document.getElementById('bleStatusData').className = 'control connecting';
+                document.getElementById('bleStatusCourse').textContent = 'Status: Connecting...';
+                document.getElementById('bleStatusCourse').className = 'control connecting';
         
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{name: 'SwimNav'}],
@@ -813,16 +816,19 @@
         
                 // Update all three tabs
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
+                document.getElementById('bleStatus').className = 'control connected';
                 document.getElementById('bleStatusData').textContent = 'Status: Connected';
-                document.getElementById('bleStatusCourse').textContent = 'Status: Connected'; // Add this line
+                document.getElementById('bleStatusData').className = 'control connected';
+                document.getElementById('bleStatusCourse').textContent = 'Status: Connected';
+                document.getElementById('bleStatusCourse').className = 'control connected';
                 
                 document.getElementById('connectBtn').textContent = 'Disconnect';
                 document.getElementById('connectBtnData').textContent = 'Disconnect';
-                document.getElementById('connectBtnCourse').textContent = 'Disconnect'; // Add this line
+                document.getElementById('connectBtnCourse').textContent = 'Disconnect';
                 
                 document.getElementById('connectBtn').onclick = disconnect;
                 document.getElementById('connectBtnData').onclick = disconnect;
-                document.getElementById('connectBtnCourse').onclick = disconnect; // Add this line
+                document.getElementById('connectBtnCourse').onclick = disconnect;
                 
                 setControlsState(true);
                 
@@ -840,8 +846,11 @@
             } catch(error) {
                 console.error(error);
                 document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
+                document.getElementById('bleStatus').className = 'control error';
                 document.getElementById('bleStatusData').textContent = 'Status: Error - ' + error;
-                document.getElementById('bleStatusCourse').textContent = 'Status: Error - ' + error; // Add this line
+                document.getElementById('bleStatusData').className = 'control error';
+                document.getElementById('bleStatusCourse').textContent = 'Status: Error - ' + error;
+                document.getElementById('bleStatusCourse').className = 'control error';
                 setControlsState(false);
             }
         }
