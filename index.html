@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 9:15</title>
+    <title>SwimNav 05/11 10:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -204,6 +204,31 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             transition: all 0.2s ease;
             text-align: center;
+        }
+
+        /* Style for BLE status indicators */
+        .status-text {
+            font-weight: 500;
+            font-size: 14px;
+            margin: 10px auto;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .status-connected {
+            color: #28a745; /* Green */
+        }
+        
+        .status-disconnected {
+            color: #dc3545; /* Red */
+        }
+        
+        .status-connecting {
+            color: #ffc107; /* Yellow/Amber */
+        }
+        
+        .status-error {
+            color: #dc3545; /* Red */
         }
         
         .control:hover {
