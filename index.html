@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 8:15</title>
+    <title>SwimNav 05/11 8:18</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -151,8 +151,19 @@
     }
     
     .tab-button.active {
-        color: #0056b3; /* Changed from white to blue */
-        background: transparent; /* Changed from #007bff to transparent */
+        color: #0056b3;
+        background: transparent;
+    }
+    
+    .tab-button.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 25%;
+        right: 25%;
+        height: 3px;
+        background: #0056b3;
+        border-radius: 3px 3px 0 0;
     }
     
     .tab-content {
