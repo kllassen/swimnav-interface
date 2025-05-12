@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 8:18</title>
+    <title>SwimNav 05/11 8:21</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -223,10 +223,25 @@
             cursor: pointer;
             display: block;
             margin: 5px auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Add subtle shadow */
+            transition: all 0.2s ease; /* Add smooth transition */
+        }
+        
+        button:hover {
+            background: #0069d9; /* Slightly darker blue on hover */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* Larger shadow on hover */
+            transform: translateY(-1px); /* Subtle lift effect */
+        }
+        
+        button:active {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Smaller shadow when clicked */
+            transform: translateY(0); /* Return to original position */
         }
         
         button:disabled {
             background: #cccccc;
+            box-shadow: none; /* No shadow for disabled buttons */
+            transform: none; /* No transform for disabled buttons */
         }
         
         #map-container {
