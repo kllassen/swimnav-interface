@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 8:38</title>
+    <title>SwimNav 05/11 8:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -758,77 +758,85 @@
             }
         }
 
-async function connect() {
-    try {
-        console.log('Requesting device...');
-        document.getElementById('bleStatus').textContent = 'Status: Connecting...';
-        document.getElementById('bleStatusData').textContent = 'Status: Connecting...';
-
-        bleDevice = await navigator.bluetooth.requestDevice({
-            filters: [{name: 'SwimNav'}],
-            optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
-        });
-
-        const server = await bleDevice.gatt.connect();
-        console.log("Connected to BLE server.");
+        async function connect() {
+            try {
+                console.log('Requesting device...');
+                document.getElementById('bleStatus').textContent = 'Status: Connecting...';
+                document.getElementById('bleStatusData').textContent = 'Status: Connecting...';
+                document.getElementById('bleStatusCourse').textContent = 'Status: Connecting...'; // Add this line
         
-        // Note: Web Bluetooth API doesn't support explicit MTU requests
-        // The ESP32 will negotiate MTU automatically during connection
-        console.log("Connected to GATT server - MTU negotiation handled by device");
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{name: 'SwimNav'}],
+                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                });
         
-        const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                const server = await bleDevice.gatt.connect();
+                console.log("Connected to BLE server.");
+                
+                // Note: Web Bluetooth API doesn't support explicit MTU requests
+                // The ESP32 will negotiate MTU automatically during connection
+                console.log("Connected to GATT server - MTU negotiation handled by device");
+                
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                
+                rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+                txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
         
-        rxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-        txCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-
-        await txCharacteristic.startNotifications();
-        txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
-
-        // Update both tabs
-        document.getElementById('bleStatus').textContent = 'Status: Connected';
-        document.getElementById('bleStatusData').textContent = 'Status: Connected';
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleData);
         
-        document.getElementById('connectBtn').textContent = 'Disconnect';
-        document.getElementById('connectBtnData').textContent = 'Disconnect';
-        
-        document.getElementById('connectBtn').onclick = disconnect;
-        document.getElementById('connectBtnData').onclick = disconnect;
-        
-        setControlsState(true);
-        
-        console.log('Requesting device status...');
-        await sendCommand(7, 0);
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        console.log('Requesting stored waypoints...');
-        // Load Google Maps after successful connection
-        loadGoogleMapsScript();
-        document.getElementById('loading-message').style.display = 'block';
-        await sendCommand(8, 0);
-        
-    } catch(error) {
-        console.error(error);
-        document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
-        document.getElementById('bleStatusData').textContent = 'Status: Error - ' + error;
-        setControlsState(false);
-    }
-}
+                // Update all three tabs
+                document.getElementById('bleStatus').textContent = 'Status: Connected';
+                document.getElementById('bleStatusData').textContent = 'Status: Connected';
+                document.getElementById('bleStatusCourse').textContent = 'Status: Connected'; // Add this line
+                
+                document.getElementById('connectBtn').textContent = 'Disconnect';
+                document.getElementById('connectBtnData').textContent = 'Disconnect';
+                document.getElementById('connectBtnCourse').textContent = 'Disconnect'; // Add this line
+                
+                document.getElementById('connectBtn').onclick = disconnect;
+                document.getElementById('connectBtnData').onclick = disconnect;
+                document.getElementById('connectBtnCourse').onclick = disconnect; // Add this line
+                
+                setControlsState(true);
+                
+                console.log('Requesting device status...');
+                await sendCommand(7, 0);
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                console.log('Requesting stored waypoints...');
+                // Load Google Maps after successful connection
+                loadGoogleMapsScript();
+                document.getElementById('loading-message').style.display = 'block';
+                await sendCommand(8, 0);
+                
+            } catch(error) {
+                console.error(error);
+                document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
+                document.getElementById('bleStatusData').textContent = 'Status: Error - ' + error;
+                document.getElementById('bleStatusCourse').textContent = 'Status: Error - ' + error; // Add this line
+                setControlsState(false);
+            }
+        }
 
         async function disconnect() {
             if (bleDevice) {
                 await bleDevice.gatt.disconnect();
             }
             
-            // Update both tabs
+            // Update all three tabs
             document.getElementById('bleStatus').textContent = 'Status: Disconnected';
             document.getElementById('bleStatusData').textContent = 'Status: Disconnected';
+            document.getElementById('bleStatusCourse').textContent = 'Status: Disconnected'; // Add this line
             
             document.getElementById('connectBtn').textContent = 'Connect';
             document.getElementById('connectBtnData').textContent = 'Connect';
+            document.getElementById('connectBtnCourse').textContent = 'Connect'; // Add this line
             
             document.getElementById('connectBtn').onclick = connect;
             document.getElementById('connectBtnData').onclick = connect;
+            document.getElementById('connectBtnCourse').onclick = connect; // Add this line
             
             setControlsState(false);
             waypoints = [];
