@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 8:57</title>
+    <title>SwimNav 05/11 9:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -195,13 +195,27 @@
         }
         
         .control {
-            margin: 10px auto;
-            padding: 5px;
-            width: 90%; 
+            margin: 15px auto;
+            padding: 15px;
+            width: 90%;
             background: white;
             border-radius: 8px;
             border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
             text-align: center;
+        }
+        
+        .control:hover {
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
         }
         
         select, input {
