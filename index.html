@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 11:30</title>
+    <title>SwimNav 05/11 11:38</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -822,7 +822,10 @@
             document.getElementById('waypointZone').disabled = !enabled;
             document.getElementById('hystCone').disabled = !enabled;
             document.getElementById('triggers').disabled = !enabled;
-            document.getElementById('logOnly').disabled = !enabled;
+            // Enable/disable all guidance mode radio buttons
+            document.querySelectorAll('input[name="guidanceMode"]').forEach(radio => {
+                radio.disabled = !enabled;
+            });
             document.getElementById('wpCoords').disabled = !enabled;
             document.getElementById('addWpBtn').disabled = !enabled;
             document.getElementById('sendWpBtn').disabled = !enabled;
@@ -1048,7 +1051,14 @@
                 document.getElementById('waypointZone').value = data[2].toString();
                 document.getElementById('hystCone').value = data[3].toString();
                 document.getElementById('triggers').value = data[4].toString();
-                document.getElementById('logOnly').checked = data[5] === 1;
+                // Update the guidance mode radio buttons based on logOnly value
+                if (data[5] === 1) {
+                    // If logOnly is true, select the "Log Only" radio button
+                    document.querySelector('input[name="guidanceMode"][value="logOnly"]').checked = true;
+                } else {
+                    // If logOnly is false, select the default "Swim Toward Signal" radio button
+                    document.querySelector('input[name="guidanceMode"][value="toward"]').checked = true;
+                }
             }
             else if (data[0] === 0xFF && data.length === 2) {
                 expectedWaypoints = data[1];
@@ -1156,6 +1166,24 @@
                 default: return;
             }
             sendCommand(cmd, parseInt(value));
+        }
+
+        function updateGuidanceMode() {
+            const selectedMode = document.querySelector('input[name="guidanceMode"]:checked').value;
+            
+            if (selectedMode === "logOnly") {
+                // If "Log Only" is selected, send logOnly = 1
+                sendSetting('logOnly', 1);
+            } else {
+                // For any other option, send logOnly = 0
+                sendSetting('logOnly', 0);
+                
+                // If it's "away" mode, we'll need to add code later to handle this
+                // For now, just log the selection
+                if (selectedMode === "away") {
+                    console.log("Swim Away mode selected - will implement direction reversal later");
+                }
+            }
         }
 
         function validateCoordinates(coordsStr) {
