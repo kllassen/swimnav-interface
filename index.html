@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 10:40</title>
+    <title>SwimNav 05/11 10:50</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -481,7 +481,7 @@
 <div id="courseTab" class="tab-content active">
     <h1>SwimNav Course</h1>
     <button id="connectBtnCourse" onclick="connect()">Connect to Device</button>
-    <div id="bleStatusCourse" class="control">Status: Disconnected</div>
+    <div id="bleStatusCourse" class="status-text status-disconnected">Status: Disconnected</div>
     
     <!-- Moved waypoint controls -->
     <div class="control">
@@ -513,7 +513,7 @@
     <div id="settingsTab" class="tab-content">
         <h1>SwimNav Control</h1>
         <button id="connectBtn" onclick="connect()">Connect to Device</button>
-        <div id="bleStatus" class="control">Status: Disconnected</div>
+        <div id="bleStatus" class="status-text status-disconnected">Status: Disconnected</div>
     
         <div class="control">
             <label>Error Cone (deg):</label>
@@ -592,7 +592,7 @@
     <div id="swimDataTab" class="tab-content">
         <h1>SwimNav Data</h1>
         <button id="connectBtnData" onclick="connect()">Connect to Device</button>
-        <div id="bleStatusData" class="control">Status: Disconnected</div>
+        <div id="bleStatusData" class="status-text status-disconnected">Status: Disconnected</div>>
         
         <!-- Download button -->
         <button id="downloadBtn" onclick="downloadData()" disabled>Swim Data Management</button>
@@ -813,11 +813,11 @@
             try {
                 console.log('Requesting device...');
                 document.getElementById('bleStatus').textContent = 'Status: Connecting...';
-                document.getElementById('bleStatus').className = 'control connecting';
+                document.getElementById('bleStatus').className = 'status-text status-connecting';
                 document.getElementById('bleStatusData').textContent = 'Status: Connecting...';
-                document.getElementById('bleStatusData').className = 'control connecting';
+                document.getElementById('bleStatusData').className = 'status-text status-connecting';
                 document.getElementById('bleStatusCourse').textContent = 'Status: Connecting...';
-                document.getElementById('bleStatusCourse').className = 'control connecting';
+                document.getElementById('bleStatusCourse').className = 'status-text status-connecting';
         
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{name: 'SwimNav'}],
@@ -841,11 +841,11 @@
         
                 // Update all three tabs
                 document.getElementById('bleStatus').textContent = 'Status: Connected';
-                document.getElementById('bleStatus').className = 'control connected';
+                document.getElementById('bleStatus').className = 'status-text status-connected';
                 document.getElementById('bleStatusData').textContent = 'Status: Connected';
-                document.getElementById('bleStatusData').className = 'control connected';
+                document.getElementById('bleStatusData').className = 'status-text status-connected';
                 document.getElementById('bleStatusCourse').textContent = 'Status: Connected';
-                document.getElementById('bleStatusCourse').className = 'control connected';
+                document.getElementById('bleStatusCourse').className = 'status-text status-connected';
                 
                 document.getElementById('connectBtn').textContent = 'Disconnect';
                 document.getElementById('connectBtnData').textContent = 'Disconnect';
@@ -871,11 +871,11 @@
             } catch(error) {
                 console.error(error);
                 document.getElementById('bleStatus').textContent = 'Status: Error - ' + error;
-                document.getElementById('bleStatus').className = 'control error';
+                document.getElementById('bleStatus').className = 'status-text status-error';
                 document.getElementById('bleStatusData').textContent = 'Status: Error - ' + error;
-                document.getElementById('bleStatusData').className = 'control error';
+                document.getElementById('bleStatusData').className = 'status-text status-error';
                 document.getElementById('bleStatusCourse').textContent = 'Status: Error - ' + error;
-                document.getElementById('bleStatusCourse').className = 'control error';
+                document.getElementById('bleStatusCourse').className = 'status-text status-error';
                 setControlsState(false);
             }
         }
@@ -887,11 +887,11 @@
             
             // Update all three tabs
             document.getElementById('bleStatus').textContent = 'Status: Disconnected';
-            document.getElementById('bleStatus').className = 'control disconnected';
+            document.getElementById('bleStatus').className = 'status-text status-disconnected';
             document.getElementById('bleStatusData').textContent = 'Status: Disconnected';
-            document.getElementById('bleStatusData').className = 'control disconnected';
+            document.getElementById('bleStatusData').className = 'status-text status-disconnected';
             document.getElementById('bleStatusCourse').textContent = 'Status: Disconnected';
-            document.getElementById('bleStatusCourse').className = 'control disconnected';
+            document.getElementById('bleStatusCourse').className = 'status-text status-disconnected';
             
             document.getElementById('connectBtn').textContent = 'Connect';
             document.getElementById('connectBtnData').textContent = 'Connect';
