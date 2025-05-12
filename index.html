@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 9:10</title>
+    <title>SwimNav 05/11 9:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -862,16 +862,19 @@
             
             // Update all three tabs
             document.getElementById('bleStatus').textContent = 'Status: Disconnected';
+            document.getElementById('bleStatus').className = 'control disconnected';
             document.getElementById('bleStatusData').textContent = 'Status: Disconnected';
-            document.getElementById('bleStatusCourse').textContent = 'Status: Disconnected'; // Add this line
+            document.getElementById('bleStatusData').className = 'control disconnected';
+            document.getElementById('bleStatusCourse').textContent = 'Status: Disconnected';
+            document.getElementById('bleStatusCourse').className = 'control disconnected';
             
             document.getElementById('connectBtn').textContent = 'Connect';
             document.getElementById('connectBtnData').textContent = 'Connect';
-            document.getElementById('connectBtnCourse').textContent = 'Connect'; // Add this line
+            document.getElementById('connectBtnCourse').textContent = 'Connect';
             
             document.getElementById('connectBtn').onclick = connect;
             document.getElementById('connectBtnData').onclick = connect;
-            document.getElementById('connectBtnCourse').onclick = connect; // Add this line
+            document.getElementById('connectBtnCourse').onclick = connect;
             
             setControlsState(false);
             waypoints = [];
