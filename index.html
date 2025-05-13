@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/12 11:10</title>
+    <title>SwimNav 05/12 11:20</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1202,8 +1202,9 @@
         function sendCommand(cmd, value) {
             if (!rxCharacteristic) {
                 console.log('Not connected');
-                return;
+                return Promise.reject(new Error('Not connected'));
             }
+            console.log(`Sending command: ${cmd}, value: ${value}`);
             const data = new Uint8Array([cmd, value]);
             return rxCharacteristic.writeValue(data);
         }
@@ -1229,21 +1230,29 @@
         
         async function updateGuidanceMode() {
             const selectedMode = document.querySelector('input[name="guidanceMode"]:checked').value;
+            console.log(`Guidance Mode changed to: ${selectedMode}`);
             
             try {
                 if (selectedMode === "logOnly") {
                     // If "Log Only" is selected, send logOnly = 1
+                    console.log('Sending logOnly = 1');
                     await sendSetting('logOnly', 1);
+                    console.log('logOnly command sent successfully');
                 } else {
                     // For any other option, send logOnly = 0
+                    console.log('Sending logOnly = 0');
                     await sendSetting('logOnly', 0);
+                    console.log('logOnly command sent successfully');
                     
                     // Add a small delay before the next BLE operation to avoid GATT conflicts
+                    console.log('Waiting 150ms before sending direction command...');
                     await new Promise(resolve => setTimeout(resolve, 150));
                     
                     // Handle signal direction for toward/away modes
                     if (selectedMode === "toward" || selectedMode === "away") {
+                        console.log(`Updating signal direction for ${selectedMode} mode`);
                         await updateSignalDirection();
+                        console.log('Signal direction updated successfully');
                     }
                 }
             } catch (error) {
@@ -1253,6 +1262,8 @@
 
         // Signal testing function
         function testSignal(type) {
+            console.log(`Signal Test: ${type} button clicked`);
+            
             // Disable all test buttons during the test
             document.getElementById('testLeftBtn').disabled = true;
             document.getElementById('testBothBtn').disabled = true;
@@ -1267,16 +1278,21 @@
                 default: return;
             }
             
+            console.log(`Sending signal test command: CMD_SIGNAL_TEST (${CMD_SIGNAL_TEST}), value: ${value}`);
+            
             // Send the test command
-            sendCommand(CMD_SIGNAL_TEST, value);
+            sendCommand(CMD_SIGNAL_TEST, value)
+                .then(() => console.log('Signal test command sent successfully'))
+                .catch(error => console.error('Error sending signal test command:', error));
             
             // Clear any existing timer
             if (signalTestTimer) {
-                clearInterval(signalTestTimer);
+                clearTimeout(signalTestTimer);
             }
             
             // Set a timer to re-enable buttons after 5 seconds
             signalTestTimer = setTimeout(() => {
+                console.log('Signal test timer completed, re-enabling buttons');
                 // Re-enable buttons only if connected
                 if (rxCharacteristic) {
                     document.getElementById('testLeftBtn').disabled = false;
