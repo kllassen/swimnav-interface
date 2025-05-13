@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/12 10:35</title>
+    <title>SwimNav 05/12 10:40</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -567,9 +567,9 @@
         <button id="connectBtn" onclick="connect()">Connect to Device</button>
         <div id="bleStatus" class="status-text status-disconnected">Status: Disconnected</div>
     
-        <div class="control">
-            <label>Error Cone (deg):</label>
-            <select id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
+        <div class="control compact-control">
+            <label class="compact-label">Error Cone (deg):</label>
+            <select class="compact-select" id="errorCone" onchange="sendSetting('errorCone', this.value)" disabled>
                 <option value="5">5°</option>
                 <option value="6">6°</option>
                 <option value="7">7°</option>
