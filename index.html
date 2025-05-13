@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/12 10:50</title>
+    <title>SwimNav 05/12 11:10</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -876,6 +876,11 @@
             document.getElementById('loadBtn').disabled = !enabled;
             document.getElementById('downloadBtn').disabled = !enabled;
             
+            // Signal test buttons
+            document.getElementById('testLeftBtn').disabled = !enabled;
+            document.getElementById('testBothBtn').disabled = !enabled;
+            document.getElementById('testRightBtn').disabled = !enabled;
+            
             // Track controls
             document.getElementById('trackFileInput').disabled = !enabled;
             
@@ -888,6 +893,12 @@
             const tcxButton = document.getElementById('createTcxBtn');
             if (tcxButton) {
                 tcxButton.disabled = !enabled || !hasCachedDownload;
+            }
+            
+            // Clear any active signal test timer when disconnecting
+            if (!enabled && signalTestTimer) {
+                clearTimeout(signalTestTimer);
+                signalTestTimer = null;
             }
         }
 
@@ -1205,31 +1216,38 @@
                 case 'hystCone': cmd = 3; break;
                 case 'triggers': cmd = 4; break;
                 case 'logOnly': cmd = 12; break;
-                default: return;
+                default: return Promise.resolve(); // Return resolved promise for invalid types
             }
-            sendCommand(cmd, parseInt(value));
+            return sendCommand(cmd, parseInt(value));
         }
 
         // Signal direction control (called from radio button change)
-        function updateSignalDirection() {
+        async function updateSignalDirection() {
             const swimAway = document.querySelector('input[name="guidanceMode"][value="away"]').checked;
-            sendCommand(CMD_SIGNAL_DIRECTION, swimAway ? 1 : 0);
+            return sendCommand(CMD_SIGNAL_DIRECTION, swimAway ? 1 : 0);
         }
         
-        function updateGuidanceMode() {
+        async function updateGuidanceMode() {
             const selectedMode = document.querySelector('input[name="guidanceMode"]:checked').value;
             
-            if (selectedMode === "logOnly") {
-                // If "Log Only" is selected, send logOnly = 1
-                sendSetting('logOnly', 1);
-            } else {
-                // For any other option, send logOnly = 0
-                sendSetting('logOnly', 0);
-                
-                // Handle signal direction for toward/away modes
-                if (selectedMode === "toward" || selectedMode === "away") {
-                    updateSignalDirection();
+            try {
+                if (selectedMode === "logOnly") {
+                    // If "Log Only" is selected, send logOnly = 1
+                    await sendSetting('logOnly', 1);
+                } else {
+                    // For any other option, send logOnly = 0
+                    await sendSetting('logOnly', 0);
+                    
+                    // Add a small delay before the next BLE operation to avoid GATT conflicts
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    
+                    // Handle signal direction for toward/away modes
+                    if (selectedMode === "toward" || selectedMode === "away") {
+                        await updateSignalDirection();
+                    }
                 }
+            } catch (error) {
+                console.error('Error updating guidance mode:', error);
             }
         }
 
