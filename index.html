@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/12 10:40</title>
+    <title>SwimNav 05/12 10:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -589,9 +589,9 @@
             </select>
         </div>
     
-        <div class="control">
-            <label>Waypoint Zone (meters):</label>
-            <select id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
+        <div class="control compact-control">
+            <label class="compact-label">Waypoint Zone (meters):</label>
+            <select class="compact-select" id="waypointZone" onchange="sendSetting('waypointZone', this.value)" disabled>
                 <option value="5">5m</option>
                 <option value="10">10m</option>
                 <option value="15" selected>15m</option>
@@ -605,9 +605,9 @@
             </select>
         </div>
     
-        <div class="control">
-            <label>Hysteresis Cone (deg):</label>
-            <select id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
+        <div class="control compact-control">
+            <label class="compact-label">Hysteresis Cone (deg):</label>
+            <select class="compact-select" id="hystCone" onchange="sendSetting('hystCone', this.value)" disabled>
                 <option value="2">2°</option>
                 <option value="3" selected>3°</option>
                 <option value="4">4°</option>
@@ -620,9 +620,9 @@
             </select>
         </div>
     
-        <div class="control">
-            <label>Signal Triggers:</label>
-            <select id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
+        <div class="control compact-control">
+            <label class="compact-label">Signal Triggers:</label>
+            <select class="compact-select" id="triggers" onchange="sendSetting('triggers', this.value)" disabled>
                 <option value="1">1</option>
                 <option value="2" selected>2</option>
                 <option value="3">3</option>
@@ -631,8 +631,8 @@
             </select>
         </div>
     
-        <div class="control">
-            <label>Guidance Mode:</label>
+        <div class="control compact-control">
+            <label class="compact-label">Guidance Mode:</label>
             <div class="radio-container">
                 <label class="radio-label">
                     <input type="radio" name="guidanceMode" value="toward" checked onchange="updateGuidanceMode()" disabled> 
@@ -650,9 +650,9 @@
         </div>
         
         <!-- New Signal Test Control -->
-        <div class="control">
-            <label>Signal Test:</label>
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+        <div class="control compact-control">
+            <label class="compact-label">Signal Test:</label>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 5px;">
                 <button id="testLeftBtn" onclick="testSignal('left')" style="width: 30%;" disabled>Left</button>
                 <button id="testBothBtn" onclick="testSignal('both')" style="width: 30%;" disabled>Both</button>
                 <button id="testRightBtn" onclick="testSignal('right')" style="width: 30%;" disabled>Right</button>
