@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/12 10:45</title>
+    <title>SwimNav 05/12 10:50</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -16,6 +16,13 @@
         let trackMarkers = [];
         let currentTrackFile = '';
         let trackInfoWindow = null;
+
+        // Command IDs for signal direction and testing
+        const CMD_SIGNAL_DIRECTION = 13;  // Swim toward (0) or away (1)
+        const CMD_SIGNAL_TEST = 14;       // Test signals: left (0), both (1), right (2)
+        
+        // Signal test timer variable
+        let signalTestTimer = null;
 
         function loadGoogleMapsScript() {
             const script = document.createElement('script');
@@ -1203,6 +1210,12 @@
             sendCommand(cmd, parseInt(value));
         }
 
+        // Signal direction control (called from radio button change)
+        function updateSignalDirection() {
+            const swimAway = document.querySelector('input[name="guidanceMode"][value="away"]').checked;
+            sendCommand(CMD_SIGNAL_DIRECTION, swimAway ? 1 : 0);
+        }
+        
         function updateGuidanceMode() {
             const selectedMode = document.querySelector('input[name="guidanceMode"]:checked').value;
             
@@ -1213,14 +1226,49 @@
                 // For any other option, send logOnly = 0
                 sendSetting('logOnly', 0);
                 
-                // If it's "away" mode, we'll need to add code later to handle this
-                // For now, just log the selection
-                if (selectedMode === "away") {
-                    console.log("Swim Away mode selected - will implement direction reversal later");
+                // Handle signal direction for toward/away modes
+                if (selectedMode === "toward" || selectedMode === "away") {
+                    updateSignalDirection();
                 }
             }
         }
 
+        // Signal testing function
+        function testSignal(type) {
+            // Disable all test buttons during the test
+            document.getElementById('testLeftBtn').disabled = true;
+            document.getElementById('testBothBtn').disabled = true;
+            document.getElementById('testRightBtn').disabled = true;
+            
+            // Map signal type to command value
+            let value;
+            switch(type) {
+                case 'left': value = 0; break;
+                case 'both': value = 1; break;
+                case 'right': value = 2; break;
+                default: return;
+            }
+            
+            // Send the test command
+            sendCommand(CMD_SIGNAL_TEST, value);
+            
+            // Clear any existing timer
+            if (signalTestTimer) {
+                clearInterval(signalTestTimer);
+            }
+            
+            // Set a timer to re-enable buttons after 5 seconds
+            signalTestTimer = setTimeout(() => {
+                // Re-enable buttons only if connected
+                if (rxCharacteristic) {
+                    document.getElementById('testLeftBtn').disabled = false;
+                    document.getElementById('testBothBtn').disabled = false;
+                    document.getElementById('testRightBtn').disabled = false;
+                }
+                signalTestTimer = null;
+            }, 5000);
+        }
+        
         function validateCoordinates(coordsStr) {
             const coords = coordsStr.split(',').map(s => parseFloat(s.trim()));
             
