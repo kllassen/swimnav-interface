@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 05/11 11:38</title>
+    <title>SwimNav 05/12 10:20</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -325,6 +325,14 @@
             box-shadow: none;
             transform: none;
         }
+
+        /* Style for test buttons */
+        .test-btn {
+            padding: 8px 12px;
+            font-size: 14px;
+            width: auto;
+            display: inline-block;
+        }
         
         #map-container {
             position: relative;
@@ -621,6 +629,16 @@
                     <input type="radio" name="guidanceMode" value="logOnly" onchange="updateGuidanceMode()" disabled> 
                     Log Only
                 </label>
+            </div>
+        </div>
+        
+        <!-- New Signal Test Control -->
+        <div class="control">
+            <label>Signal Test:</label>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                <button id="testLeftBtn" onclick="testSignal('left')" style="width: 30%;" disabled>Left</button>
+                <button id="testBothBtn" onclick="testSignal('both')" style="width: 30%;" disabled>Both</button>
+                <button id="testRightBtn" onclick="testSignal('right')" style="width: 30%;" disabled>Right</button>
             </div>
         </div>
     </div>
