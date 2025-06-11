@@ -1099,18 +1099,25 @@
             console.log('Received regular packet type:', data[0].toString(16));
             console.log('Packet data:', Array.from(data).map(b => b.toString(16)));
             
-            if (data[0] === 0xFF && data.length === 6) {
+            if (data[0] === 0xFF && data.length === 7) {
                 document.getElementById('errorCone').value = data[1].toString();
                 document.getElementById('waypointZone').value = data[2].toString();
                 document.getElementById('hystCone').value = data[3].toString();
                 document.getElementById('triggers').value = data[4].toString();
-                // Update the guidance mode radio buttons based on logOnly value
+                
+                // Update the guidance mode radio buttons based on logOnly and signal direction values
                 if (data[5] === 1) {
                     // If logOnly is true, select the "Log Only" radio button
                     document.querySelector('input[name="guidanceMode"][value="logOnly"]').checked = true;
                 } else {
-                    // If logOnly is false, select the default "Swim Toward Signal" radio button
-                    document.querySelector('input[name="guidanceMode"][value="toward"]').checked = true;
+                    // If logOnly is false, check signal direction mode (data[6])
+                    if (data[6] === 1) {
+                        // Signal direction mode = 1 means "Swim Away"
+                        document.querySelector('input[name="guidanceMode"][value="away"]').checked = true;
+                    } else {
+                        // Signal direction mode = 0 means "Swim Toward" (default)
+                        document.querySelector('input[name="guidanceMode"][value="toward"]').checked = true;
+                    }
                 }
             }
             else if (data[0] === 0xFF && data.length === 2) {
