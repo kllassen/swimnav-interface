@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 06/29 7:33</title>
+    <title>SwimNav 06/29 7:45</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1121,7 +1121,7 @@
             console.log('Received regular packet type:', data[0].toString(16));
             console.log('Packet data:', Array.from(data).map(b => b.toString(16)));
             
-            if (data[0] === 0xFF && data.length === 7) {
+            if (data[0] === 0xFF && data.length === 9) {
                 document.getElementById('errorCone').value = data[1].toString();
                 document.getElementById('waypointZone').value = data[2].toString();
                 document.getElementById('hystCone').value = data[3].toString();
@@ -1141,6 +1141,43 @@
                         document.querySelector('input[name="guidanceMode"][value="toward"]').checked = true;
                     }
                 }
+                
+                // Update haptic timing if provided (data[7] = ON time, data[8] = OFF time)
+                if (data.length >= 9) {
+                    const onTime = (data[7] << 8) | data[8]; // Combine two bytes for ON time
+                    document.getElementById('hapticOnTime').value = onTime;
+                    document.getElementById('onTimeValue').textContent = onTime;
+                }
+            } else if (data[0] === 0xFF && data.length === 11) {
+                // Extended status packet with OFF time
+                document.getElementById('errorCone').value = data[1].toString();
+                document.getElementById('waypointZone').value = data[2].toString();
+                document.getElementById('hystCone').value = data[3].toString();
+                document.getElementById('triggers').value = data[4].toString();
+                
+                // Update guidance modes
+                if (data[5] === 1) {
+                    document.querySelector('input[name="guidanceMode"][value="logOnly"]').checked = true;
+                } else {
+                    if (data[6] === 1) {
+                        document.querySelector('input[name="guidanceMode"][value="away"]').checked = true;
+                    } else {
+                        document.querySelector('input[name="guidanceMode"][value="toward"]').checked = true;
+                    }
+                }
+                
+                // Update haptic timing (data[7-8] = ON time, data[9-10] = OFF time)
+                const onTime = (data[7] << 8) | data[8];
+                const offTime = (data[9] << 8) | data[10];
+                
+                document.getElementById('hapticOnTime').value = onTime;
+                document.getElementById('onTimeValue').textContent = onTime;
+                document.getElementById('hapticOffTime').value = offTime;
+                document.getElementById('offTimeValue').textContent = offTime;
+                
+                // Update battery impact display
+                const dutyCycle = (onTime / (onTime + offTime)) * 100;
+                updateBatteryImpact(dutyCycle);
             }
             else if (data[0] === 0xFF && data.length === 2) {
                 expectedWaypoints = data[1];
