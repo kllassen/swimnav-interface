@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 06/10 11:20</title>
+    <title>SwimNav 06/29 6:47</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -664,6 +664,18 @@
                 <button id="testBothBtn" onclick="testSignal('both')" style="width: 30%;" disabled>Both</button>
                 <button id="testRightBtn" onclick="testSignal('right')" style="width: 30%;" disabled>Right</button>
             </div>
+        </div>
+    </div>
+
+        <!-- Haptic Timing Control -->
+        <div class="control compact-control">
+            <label class="compact-label">Haptic ON Time: <span id="onTimeValue">250</span>ms</label>
+            <input type="range" id="hapticOnTime" min="100" max="1000" value="250" step="50" disabled>
+        </div>
+        
+        <div class="control compact-control">
+            <label class="compact-label">Haptic OFF Time: <span id="offTimeValue">1000</span>ms</label>
+            <input type="range" id="hapticOffTime" min="500" max="5000" value="1000" step="250" disabled>
         </div>
     </div>
     
