@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 06/29 7:20</title>
+    <title>SwimNav 06/29 7:24</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1285,6 +1285,44 @@
             }
         }
 
+        // Haptic timing control functions
+        function updateHapticTiming() {
+            const onTime = document.getElementById('hapticOnTime').value;
+            const offTime = document.getElementById('hapticOffTime').value;
+            
+            // Update display values
+            document.getElementById('onTimeValue').textContent = onTime;
+            document.getElementById('offTimeValue').textContent = offTime;
+            
+            // Calculate duty cycle and update battery impact
+            const dutyCycle = (onTime / (parseInt(onTime) + parseInt(offTime))) * 100;
+            updateBatteryImpact(dutyCycle);
+        }
+        
+        function updateBatteryImpact(dutyCycle) {
+            const bar = document.getElementById('batteryImpactBar');
+            const text = document.getElementById('batteryImpactText');
+            
+            // Map duty cycle to percentage (2% to 67% maps to 0% to 100%)
+            const percentage = ((dutyCycle - 2) / (67 - 2)) * 100;
+            const clampedPercentage = Math.max(0, Math.min(100, percentage));
+            
+            // Update bar width
+            bar.style.width = clampedPercentage + '%';
+            
+            // Update color and text based on impact level
+            if (clampedPercentage <= 33) {
+                bar.style.backgroundColor = '#28a745'; // Green
+                text.textContent = 'Low';
+            } else if (clampedPercentage <= 66) {
+                bar.style.backgroundColor = '#ffc107'; // Yellow
+                text.textContent = 'Medium';
+            } else {
+                bar.style.backgroundColor = '#dc3545'; // Red
+                text.textContent = 'High';
+            }
+        }
+        
         // Signal testing function
         function testSignal(type) {
             console.log(`Signal Test: ${type} button clicked`);
