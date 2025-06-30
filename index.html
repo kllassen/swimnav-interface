@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 06/29 7:45</title>
+    <title>SwimNav 06/29 8:30</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1338,6 +1338,38 @@
             // Calculate duty cycle and update battery impact
             const dutyCycle = (onTime / (parseInt(onTime) + parseInt(offTime))) * 100;
             updateBatteryImpact(dutyCycle);
+            
+            // Send timing commands to device if connected
+            if (rxCharacteristic) {
+                sendHapticTiming(parseInt(onTime), parseInt(offTime));
+            }
+        }
+        
+        async function sendHapticTiming(onTime, offTime) {
+            try {
+                // Send ON time (command 15)
+                const onTimeData = new Uint8Array([
+                    15,  // Command 15
+                    (onTime >> 8) & 0xFF,  // High byte
+                    onTime & 0xFF          // Low byte
+                ]);
+                await rxCharacteristic.writeValue(onTimeData);
+                
+                // Small delay between commands
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Send OFF time (command 16)
+                const offTimeData = new Uint8Array([
+                    16,  // Command 16
+                    (offTime >> 8) & 0xFF,  // High byte
+                    offTime & 0xFF         // Low byte
+                ]);
+                await rxCharacteristic.writeValue(offTimeData);
+                
+                console.log(`Sent haptic timing: ON=${onTime}ms, OFF=${offTime}ms`);
+            } catch (error) {
+                console.error('Error sending haptic timing:', error);
+            }
         }
         
         function updateBatteryImpact(dutyCycle) {
