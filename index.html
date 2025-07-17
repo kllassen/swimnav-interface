@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 07/16 9:50</title>
+    <title>SwimNav 07/16 10:10</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1543,7 +1543,7 @@
                 if (waypoints.length > 0) {
                     try {
                         const timestamp = Math.floor(Date.now() / 1000);
-                        const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${waypoints[0].lat},${waypoints[0].lon}&timestamp=${timestamp}&key=AIzaSyDjWeOxmlkMVnZcV54-wbtunWFVluHtoN0`;
+                        const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${waypoints[0].lat},${waypoints[0].lon}&timestamp=${timestamp}&key=AIzaSyBqKcoSMOvzqBLoei7FO29LbUCKKEkqGKw`;
                         
                         console.log('Time Zone API URL:', url);
                         const response = await fetch(url);
