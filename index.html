@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 06/29 8:30</title>
+    <title>SwimNav 07/16 9:15</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1537,8 +1537,39 @@
                     document.getElementById('error-message').textContent = 'Maximum 99 waypoints allowed';
                     return;
                 }
+
+                // Get timezone offset for first waypoint
+                let gmtOffsetMinutes = 0;
+                if (waypoints.length > 0) {
+                    try {
+                        const timestamp = Math.floor(Date.now() / 1000);
+                        const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${waypoints[0].lat},${waypoints[0].lon}&timestamp=${timestamp}&key=AIzaSyDjWeOxmlkMVnZcV54-wbtunWFVluHtoN0`;
+                        
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        
+                        if (data.status === 'OK') {
+                            // Convert seconds to minutes
+                            gmtOffsetMinutes = Math.round((data.rawOffset + data.dstOffset) / 60);
+                            console.log(`Timezone: ${data.timeZoneName}, GMT offset: ${gmtOffsetMinutes} minutes`);
+                        } else {
+                            console.error('Timezone API error:', data.status);
+                        }
+                    } catch (error) {
+                        console.error('Failed to get timezone:', error);
+                    }
+                }
         
                 await sendCommand(6, 0);
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Send GMT offset to device (command 17)
+                const offsetData = new Uint8Array(3);
+                offsetData[0] = 17; // Command 17
+                offsetData[1] = (gmtOffsetMinutes >> 8) & 0xFF; // High byte
+                offsetData[2] = gmtOffsetMinutes & 0xFF;        // Low byte
+                await rxCharacteristic.writeValue(offsetData);
+                console.log(`Sent GMT offset: ${gmtOffsetMinutes} minutes`);
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
                 for (const wp of waypoints) {
