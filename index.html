@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 07/17 7:10</title>
+    <title>SwimNav 07/17 7:37</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1760,7 +1760,7 @@
         
             function saveLogData(filename) {
                 // Create metadata header with both filenames
-                const metadata = `# User filename: ${filename}\n# Device filename: ${deviceFilename}\n# Downloaded: ${new Date().toISOString()}\n\n`;
+                const metadata = `# User filename: ${filename}\n# Device filename: ${deviceFilename}\n# Downloaded: ${new Date().toLocaleString()}\n\n`;
                 
                 // Combine metadata with data
                 const fullData = metadata + downloadBuffer;
