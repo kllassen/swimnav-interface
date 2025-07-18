@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 07/17 7:50</title>
+    <title>SwimNav 07/17 8:05</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -1071,52 +1071,7 @@
             } catch (e) {
                 // Ignore decoding errors
             }
-            
-            /* This is Dead Code from TEXT file transfer attempt
-            // Handle file download protocol
-            if (isDownloading || dataString.startsWith('START')) {
-                // Check for text markers
-                if (dataString === 'START_FILE') {
-                    console.log('Received START_FILE marker');
-                    downloadBuffer = '';
-                    downloadProgress = 0;
-                    isDownloading = true;
-                    updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... 0%`);
-                }
-                else if (dataString === 'END_FILE') {
-                    console.log('Received END_FILE marker, download complete');
-                    await handleDownloadComplete();
-                    isDownloading = false;
-                }
-                else if (dataString.startsWith('PROGRESS_')) {
-                    const progressPart = dataString.split('_')[1];
-                    if (progressPart && !isNaN(parseInt(progressPart))) {
-                        downloadProgress = parseInt(progressPart);
-                        updateDownloadStatus(`Downloading ${availableSessions[currentDownloadIndex].filename}... ${downloadProgress}%`);
-                        console.log(`Download progress: ${downloadProgress}%`);
-                    }
-                }
-                else if (dataString.startsWith('CHUNK_')) {
-                    // This is just a chunk marker, we can ignore the marker itself
-                    console.log('Received chunk marker:', dataString);
-                }
-                else if (isDownloading) {
-                    // This is actual file data
-                    // Decode as text for CSV files
-                    try {
-                        const textDecoder = new TextDecoder();
-                        const logData = textDecoder.decode(data);
-                        downloadBuffer += logData;
-                        console.log(`Added data chunk of ${data.length} bytes, buffer size: ${downloadBuffer.length}`);
-                    } catch (e) {
-                        console.error('Error decoding data chunk:', e);
-                    }
-                }
-                
-                return; // Skip regular packet processing when in download mode
-            }
-            */
-            
+                     
             // Regular packets when not downloading
             console.log('Received regular packet type:', data[0].toString(16));
             console.log('Packet data:', Array.from(data).map(b => b.toString(16)));
@@ -1682,82 +1637,7 @@
                 updateDownloadStatus(`Error downloading ${session.filename}`);
             }
         }
-        
-        /* This is Dead Code from TEXT file transfer attempt
-        async function handleDownloadComplete() {
-            const session = availableSessions[currentDownloadIndex];
-            console.log('Download complete for session:', session);
-            
-            if (session && downloadBuffer) {
-                try {
-                    // Add metadata as comments at the top of the file
-                    const metadata = [
-                        `# File: ${session.filename}`,
-                        `# Size: ${(session.size / 1024).toFixed(2)} KB`,
-                        `# Records: ${session.records}`,
-                        `# Downloaded: ${new Date().toLocaleString()}`,
-                        ''
-                    ].join('\n');
-                    
-                    // Combine metadata with the downloaded data
-                    const processedData = metadata + downloadBuffer;
-                    
-                    // Prepare base filename (without extension)
-                    let baseFilename = session.filename.startsWith('/') ? 
-                                    session.filename.substring(1) : session.filename;
-                    
-                    // Remove any existing extension to get clean base name
-                    baseFilename = baseFilename.replace(/\.[^/.]+$/, "");
-                    
-                    // Save CSV file
-                    const csvBlob = new Blob([processedData], { type: 'text/csv' });
-                    const csvUrl = URL.createObjectURL(csvBlob);
-                    const csvLink = document.createElement('a');
-                    csvLink.href = csvUrl;
-                    csvLink.download = baseFilename + '.csv';
-                    document.body.appendChild(csvLink);
-                    
-                    // ✅ Cache data and enable button first
-                    lastDownloadedData = processedData;
-                    lastDownloadedFilename = baseFilename;
-                    hasCachedDownload = true;
-                    
-                    const tcxButton = document.getElementById('createTcxBtn');
-                    if (tcxButton) {
-                        tcxButton.disabled = false;
-                        console.log("TCX button disabled state after enabling:", tcxButton.disabled);
-                        updateDownloadStatus('CSV file downloaded. Click "Create TCX" button to create TCX file.');
-                    }
-                    
-                    // ✅ Trigger download last
-                    csvLink.click(); // 👈 Move this line here
-                    document.body.removeChild(csvLink);
-                    URL.revokeObjectURL(csvUrl);
-                    console.log(`CSV file ${baseFilename}.csv saved successfully`);
-                    
-                } catch (error) {
-                    console.error('Error saving files:', error);
-                    updateDownloadStatus(`Error saving files: ${error.message}`);
-                }
-            } else {
-                console.warn('No data received or session information missing');
-            }
-            
-            downloadBuffer = '';
-            currentDownloadIndex++;
-            
-            // Only continue if there are more selected sessions to download
-            if (currentDownloadIndex < availableSessions.length) {
-                await requestNextSession(availableSessions);
-            } else {
-                isDownloading = false;
-                if (!hasCachedDownload) {
-                    updateDownloadStatus('Downloads complete!');
-                }
-            }
-        } 
-        */
-        
+                
             function saveLogData(filename) {
                 // Create metadata header with both filenames
                 const metadata = `# User filename: ${filename}\n# Device filename: ${deviceFilename}\n# Downloaded: ${new Date().toLocaleString()}\n\n`;
@@ -2801,52 +2681,6 @@
             return tcx;
         }
         
-        /* Test function to create and download a TCX file - Dead Code
-        function testTcxFileDownload() {
-            try {
-                console.log("Testing TCX file creation and download");
-                
-                // Create some test GPS data
-                const testCsv = `# Test CSV data
-        time,lat,lon,elevation,efficiency
-        2023-01-01T12:00:00Z,42.540340,-83.214491,100,25
-        2023-01-01T12:01:00Z,42.541000,-83.214600,102,27
-        2023-01-01T12:02:00Z,42.542000,-83.214700,103,28
-        2023-01-01T12:03:00Z,42.543000,-83.214800,101,26
-        2023-01-01T12:04:00Z,42.544000,-83.214900,100,25`;
-                
-                // Create TCX file
-                const tcxContent = createTcxFromCsv(testCsv);
-                
-                if (!tcxContent) {
-                    console.error("Failed to create TCX file");
-                    return false;
-                }
-                
-                // Create a Blob from the TCX content
-                const blob = new Blob([tcxContent], { type: 'application/vnd.garmin.tcx+xml' });
-                
-                // Create a download link
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "test.tcx";
-                
-                // Trigger the download
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                console.log("Test TCX file download initiated");
-                return true;
-            } catch (error) {
-                console.error("Error creating or downloading TCX file:", error);
-                return false;
-            }
-        }  
-        */
-
         // Function to download TCX file
         function downloadTcxFile(tcxContent, filename) {
             try {
@@ -2916,77 +2750,7 @@
                 updateDownloadStatus("Error creating TCX file: " + error.message);
             }
         }
-        
-        /* New test function with more realistic data and lap support - Dead Code
-        function testRealisticTcxWithLaps() {
-            try {
-                console.log("Creating realistic test TCX file with laps");
                 
-                // Use today's date and time
-                const now = new Date();
-                const baseTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0); // 10:00 AM today
-                
-                // Create CSV with realistic points and time intervals
-                let testCsv = "# Realistic test data\ntime,lat,lon,efficiency\n";
-                
-                // Create 20 points with 30-second intervals
-                for (let i = 0; i < 20; i++) {
-                    const time = new Date(baseTime.getTime() + i * 30000); // 30 seconds apart
-                    const lat = 42.54034 + (i * 0.0005); // Distance increments
-                    const lon = -83.214491 + (i * 0.0008);
-                    const efficiency = 25 + Math.sin(i * 0.5) * 5; // Some efficiency changes
-                    
-                    testCsv += `${time.toISOString()},${lat.toFixed(6)},${lon.toFixed(6)},${efficiency.toFixed(1)}\n`;
-                }
-                
-                // Define waypoints for lap creation
-                const waypoints = [
-                    { lat: 42.541590, lon: -83.215091 }, // Near point 5
-                    { lat: 42.543040, lon: -83.215891 }, // Near point 10
-                    { lat: 42.544490, lon: -83.216691 }  // Near point 15
-                ];
-                
-                // Parse points from CSV
-                const points = parseGpsPoints(testCsv);
-                
-                if (!points || points.length === 0) {
-                    console.error("No valid GPS points found in test data");
-                    return false;
-                }
-                
-                // Generate modified TCX content with laps
-                // We'll need to enhance our generateTcxContent function to support laps
-                const tcxContent = generateTcxWithLaps(points, waypoints);
-                
-                if (!tcxContent) {
-                    console.error("Failed to create TCX file with laps");
-                    return false;
-                }
-                
-                // Create a Blob from the TCX content
-                const blob = new Blob([tcxContent], { type: 'application/vnd.garmin.tcx+xml' });
-                
-                // Create a download link
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "realistic_test_with_laps.tcx";
-                
-                // Trigger the download
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                console.log("Realistic test TCX file with laps download initiated");
-                return true;
-            } catch (error) {
-                console.error("Error creating or downloading realistic TCX file with laps:", error);
-                return false;
-            }
-        }
-        */
-        
         // Function to generate TCX content with laps
         function generateTcxWithLaps(points, waypoints) {
             // Generate a random ID for the activity
