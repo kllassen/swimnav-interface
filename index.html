@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 07/17 8:05</title>
+    <title>SwimNav 09/25 6:50</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -2034,7 +2034,8 @@
                 
                 fileTransfer.bytesReceived += chunkSize;
                 fileTransfer.currentPacketId = packetId;
-                
+
+                console.log(`Sending ACK for packet ${packetId}`);
                 // Send acknowledgment
                 await sendAck(packetId);
             } catch (error) {
@@ -2064,7 +2065,7 @@
                 console.error(`Unexpected end packet ID: got=${packetId}, expected=${fileTransfer.currentPacketId + 1}`);
                 // Send ACK anyway to complete transfer
             }
-            
+
             // Send final acknowledgment
             await sendAck(packetId);
             
