@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SwimNav 09/26 6:52</title>
+    <title>SwimNav 09/26 7:00</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
@@ -802,7 +802,7 @@
             
             try {
                 // Add small delay to prevent GATT conflicts
-                await new Promise(resolve => setTimeout(resolve, 50));
+                //await new Promise(resolve => setTimeout(resolve, 20));
                 await rxCharacteristic.writeValue(ackPacket);
                 console.log('Sent ACK for packet:', packetId);
                 return true;
